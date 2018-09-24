@@ -54,12 +54,6 @@ func main() {
 	m.Route("/autodiscover/autodiscover.xml", "GET, POST", autodiscover) // GET support only for debugging
 	m.Route("/Autodiscover/Autodiscover.xml", "GET, POST", autodiscover)
 
-	log.Printf("Let's Encrypt URL: %s\n", url)
-	log.Printf("Certificate cache directory: %s\n", certsDir)
-	log.Printf("SMTP server: %s\n", smtpServer)
-	log.Printf("IMAP server: %s\n", imapServer)
-	log.Printf("POP3 server: %s\n", popServer)
-
 	// Let's Encrypt autocert via tls-alpn-01 challenge
 	// See https://tools.ietf.org/html/draft-ietf-acme-tls-alpn-01
 
@@ -73,6 +67,13 @@ func main() {
 		Handler:      m,
 		TLSConfig:    &tls.Config{GetCertificate: manager.GetCertificate},
 	}
+
+	log.Printf("Let's Encrypt URL: %s\n", url)
+	log.Printf("Certificate cache directory: %s\n", certsDir)
+
+	log.Printf("SMTP server: %s\n", smtpServer)
+	log.Printf("IMAP server: %s\n", imapServer)
+	log.Printf("POP3 server: %s\n", popServer)
 
 	log.Printf("Starting HTTPS server on %s\n", addrs)
 	log.Println(s.ListenAndServeTLS("", ""))
