@@ -23,7 +23,7 @@ type apacheLogRecord struct {
 	elapsedTime           time.Duration
 }
 
-func apacheLogHandler(ctx *macaron.Context, log *log.Logger) {
+func apacheLogHandler(ctx *macaron.Context) {
 	clientIP := ctx.Req.RemoteAddr
 	if colon := strings.LastIndex(clientIP, ":"); colon != -1 {
 		clientIP = clientIP[:colon]
