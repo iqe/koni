@@ -37,6 +37,9 @@ func main() {
 	imapServer = *imapServerFlag
 	popServer = *popServerFlag
 
+	// Remove date + time from logging output (systemd adds those for us)
+	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
+
 	m := macaron.New()
 	m.Use(apacheLogHandler)
 	m.Use(macaron.Recovery())
