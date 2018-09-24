@@ -37,12 +37,9 @@ func main() {
 	imapServer = *imapServerFlag
 	popServer = *popServerFlag
 
-	//m := macaron.Classic()
-
 	m := macaron.New()
 	m.Use(apacheLogHandler)
 	m.Use(macaron.Recovery())
-	//m.Use(macaron.Static("public"))
 
 	m.Use(pongo2.Pongoer(pongo2.Options{
 		Directory:       "templates",
@@ -56,12 +53,6 @@ func main() {
 	// Microsoft autodiscover v1
 	m.Route("/autodiscover/autodiscover.xml", "GET, POST", autodiscover) // GET support only for debugging
 	m.Route("/Autodiscover/Autodiscover.xml", "GET, POST", autodiscover)
-
-	// Only used from web form
-	//m.Route("/mobileconfig", "GET, POST", mobileconfig) // GET support only for debugging
-
-	// Web form for mobileconfig file generation
-	//m.Get("/(.*)", macaron.Static("public"))
 
 	log.Printf("Let's Encrypt URL: %s\n", url)
 	log.Printf("Certificate cache directory: %s\n", certsDir)
