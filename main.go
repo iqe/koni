@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-macaron/pongo2"
@@ -33,21 +34,25 @@ var (
 func main() {
 	flag.Parse()
 	configFile := *configFileFlag
-	config, err := toml.LoadFile(configFile)
-	if err != nil {
-		log.Fatalf("Failed to load config file %s: %s", configFile, err)
+	if _, err := os.Stat(configFile); err != nil {
+		log.Fatalf("Error: Cannot open config: %s", err)
 	}
 
-	addr := config.GetDefault("listen", defaultListen).(string)
+	config, err := toml.LoadFile(configFile)
+	if err != nil {
+		log.Fatalf("Config file %s is malformed: %s", configFile, err)
+	}
 
-	url := config.GetDefault("letsencrypt.url", defaultURL).(string)
-	certsDir := config.GetDefault("letsencrypt.certs_dir", defaultCertsDir).(string)
-	email := config.Get("letsencrypt.email").(string)
+	addr := getConfigValueDefault(config, "listen", defaultListen)
 
-	provider = config.Get("mail.provider_id").(string)
-	imapServer = config.Get("mail.imap_server").(string)
-	popServer = config.Get("mail.pop3_server").(string)
-	smtpServer = config.Get("mail.smtp_server").(string)
+	url := getConfigValueDefault(config, "letsencrypt.url", defaultURL)
+	certsDir := getConfigValueDefault(config, "letsencrypt.certs_dir", defaultCertsDir)
+	email := getConfigValue(config, "letsencrypt.email")
+
+	provider = getConfigValue(config, "mail.provider_id")
+	imapServer = getConfigValue(config, "mail.imap_server")
+	popServer = getConfigValue(config, "mail.pop3_server")
+	smtpServer = getConfigValue(config, "mail.smtp_server")
 
 	// Remove date + time from logging output (systemd adds those for us)
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
@@ -92,4 +97,22 @@ func main() {
 
 	log.Printf("Starting HTTPS server on %s\n", addr)
 	log.Println(s.ListenAndServeTLS("", ""))
+}
+
+func getConfigValueDefault(config *toml.Tree, key string, defaultVal string) string {
+	val := config.Get(key)
+	if val == nil {
+		return defaultVal
+	}
+
+	return val.(string)
+}
+
+func getConfigValue(config *toml.Tree, key string) string {
+	val := config.Get(key)
+	if val == nil {
+		log.Fatalf("Invalid configuration file: Mandatory setting '%s' is missing", key)
+	}
+
+	return val.(string)
 }
