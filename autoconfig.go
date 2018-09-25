@@ -8,13 +8,14 @@ import (
 
 func autoconfigHandler(config koniConfig) macaron.Handler {
 	return func(ctx *macaron.Context) {
-		emailaddress := ctx.Params("emailaddress")
-		_, domain := splitEmail(emailaddress)
+		emailaddress := ctx.Req.URL.Query().Get("emailaddress")
+		user, domain := splitEmail(emailaddress)
 
 		data := map[string]interface{}{
 			"provider":     config.provider,
 			"domain":       domain,
 			"emailaddress": emailaddress,
+			"shortname":    user,
 			"smtp_server":  config.smtpServer,
 			"imap_server":  config.imapServer,
 			"pop_server":   config.popServer,
