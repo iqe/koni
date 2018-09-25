@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	versionFlag    = flag.Bool("V", false, "Print version and exit")
 	configFileFlag = flag.String("c", "koni.conf", "Path to configuration file")
 	version        = "undefined" // updated during release build
 )
@@ -28,6 +29,12 @@ func main() {
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 
 	flag.Parse()
+
+	if *versionFlag {
+		log.Printf("koni - version %s\n", version)
+		os.Exit(0)
+	}
+
 	configFile := *configFileFlag
 	if _, err := os.Stat(configFile); err != nil {
 		log.Fatalf("Error: Cannot open config: %s", err)
