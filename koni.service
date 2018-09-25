@@ -1,0 +1,23 @@
+# Example systemd unit file for Koni
+#
+# To install the systemd service, run the following commands:
+#
+# root> adduser --system koni
+# root> cp koni.service /etc/systemd/system
+# root> systemctl enable koni.service
+# root> systemctl start koni.service
+
+[Unit]
+Description=Koni
+After=network.target
+
+[Service]
+User=koni
+WorkingDirectory=/opt/koni
+ExecStart=/opt/koni/koni -c /opt/koni.conf
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=multi-user.target
