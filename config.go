@@ -7,7 +7,8 @@ import (
 )
 
 type koniConfig struct {
-	listen string
+	listenHTTP  string
+	listenHTTPS string
 
 	url      string
 	certsDir string
@@ -26,14 +27,15 @@ func loadConfigFile(configFile string) koniConfig {
 	}
 
 	return koniConfig{
-		listen:     getConfigValueDefault(tomlConfig, "listen", defaultListen),
-		url:        getConfigValueDefault(tomlConfig, "letsencrypt.url", defaultURL),
-		certsDir:   getConfigValueDefault(tomlConfig, "letsencrypt.certs_dir", defaultCertsDir),
-		email:      getConfigValue(tomlConfig, "letsencrypt.email"),
-		provider:   getConfigValue(tomlConfig, "mail.provider_id"),
-		imapServer: getConfigValue(tomlConfig, "mail.imap_server"),
-		popServer:  getConfigValue(tomlConfig, "mail.pop3_server"),
-		smtpServer: getConfigValue(tomlConfig, "mail.smtp_server"),
+		listenHTTP:  getConfigValueDefault(tomlConfig, "listen_http", defaultListenHTTP),
+		listenHTTPS: getConfigValueDefault(tomlConfig, "listen_https", defaultListenHTTPS),
+		url:         getConfigValueDefault(tomlConfig, "letsencrypt.url", defaultURL),
+		certsDir:    getConfigValueDefault(tomlConfig, "letsencrypt.certs_dir", defaultCertsDir),
+		email:       getConfigValue(tomlConfig, "letsencrypt.email"),
+		provider:    getConfigValue(tomlConfig, "mail.provider_id"),
+		imapServer:  getConfigValue(tomlConfig, "mail.imap_server"),
+		popServer:   getConfigValue(tomlConfig, "mail.pop3_server"),
+		smtpServer:  getConfigValue(tomlConfig, "mail.smtp_server"),
 	}
 }
 

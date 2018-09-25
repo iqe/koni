@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"time"
@@ -19,9 +20,10 @@ var (
 )
 
 const (
-	defaultListen   = "127.0.0.1:4443"
-	defaultURL      = "https://acme-staging.api.letsencrypt.org/directory"
-	defaultCertsDir = "."
+	defaultListenHTTP  = "127.0.0.1:4080"
+	defaultListenHTTPS = "127.0.0.1:4443"
+	defaultURL         = "https://acme-staging.api.letsencrypt.org/directory"
+	defaultCertsDir    = "."
 )
 
 func main() {
@@ -65,7 +67,7 @@ func main() {
 	manager := buildAutocertManager(config.url, config.email, config.certsDir)
 
 	s := &http.Server{
-		Addr:         config.listen,
+		Addr:         config.listenHTTPS,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second, // Enough time to handle Let's Encrypt challenge on first request for any domain
 		IdleTimeout:  120 * time.Second,
@@ -81,6 +83,25 @@ func main() {
 	log.Printf("IMAP server: %s\n", config.imapServer)
 	log.Printf("POP3 server: %s\n", config.popServer)
 
-	log.Printf("HTTPS server listening on %s\n", config.listen)
+	// Redirect all HTTP traffic to HTTPS
+	log.Printf("HTTP server listening on %s\n", config.listenHTTP)
+	go func() {
+		err := http.ListenAndServe(config.listenHTTP, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			host, _, err := net.SplitHostPort(r.Host)
+			if err != nil {
+				log.Printf("Error during HTTP to HTTPS redirect for %s: %v", r.Host, err)
+				http.Error(w, "Bad request", http.StatusBadRequest)
+				return
+			}
+
+			http.Redirect(w, r, "https://"+host+r.RequestURI, http.StatusMovedPermanently)
+		}))
+
+		if err != nil {
+			log.Fatalf("Failed to listen on %s: %v\n", config.listenHTTP, err)
+		}
+	}()
+
+	log.Printf("HTTPS server listening on %s\n", config.listenHTTPS)
 	log.Println(s.ListenAndServeTLS("", ""))
 }
