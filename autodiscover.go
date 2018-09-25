@@ -15,11 +15,11 @@ import (
 //   </Request>
 // </Autodiscover>
 
-type Autodiscover struct {
-	Request Request
+type autodiscover struct {
+	Request request
 }
 
-type Request struct {
+type request struct {
 	EMailAddress             string
 	AcceptableResponseSchema string
 }
@@ -31,7 +31,7 @@ func autodiscoverHandler(config koniConfig) macaron.Handler {
 			ctx.Error(400, "Invalid autodiscover request")
 			return
 		}
-		var requestXML Autodiscover
+		var requestXML autodiscover
 		xml.Unmarshal(b, &requestXML)
 
 		emailaddress := requestXML.Request.EMailAddress
