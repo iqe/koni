@@ -6,20 +6,22 @@ import (
 	macaron "gopkg.in/macaron.v1"
 )
 
-func autoconfig(ctx *macaron.Context) {
-	emailaddress := ctx.Params("emailaddress")
-	_, domain := splitEmail(emailaddress)
+func autoconfigHandler(config koniConfig) macaron.Handler {
+	return func(ctx *macaron.Context) {
+		emailaddress := ctx.Params("emailaddress")
+		_, domain := splitEmail(emailaddress)
 
-	data := map[string]interface{}{
-		"provider":     provider,
-		"domain":       domain,
-		"emailaddress": emailaddress,
-		"smtp_server":  smtpServer,
-		"imap_server":  imapServer,
-		"pop_server":   popServer,
+		data := map[string]interface{}{
+			"provider":     config.provider,
+			"domain":       domain,
+			"emailaddress": emailaddress,
+			"smtp_server":  config.smtpServer,
+			"imap_server":  config.imapServer,
+			"pop_server":   config.popServer,
+		}
+
+		ctx.Render.HTML(200, "autoconfig", data)
 	}
-
-	ctx.Render.HTML(200, "autoconfig", data)
 }
 
 func splitEmail(emailaddress string) (string, string) {

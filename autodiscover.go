@@ -24,23 +24,25 @@ type Request struct {
 	AcceptableResponseSchema string
 }
 
-func autodiscover(ctx *macaron.Context) {
-	b, err := ctx.Req.Body().Bytes()
-	if err != nil {
-		ctx.Error(400, "Invalid autodiscover request")
-		return
+func autodiscoverHandler(config koniConfig) macaron.Handler {
+	return func(ctx *macaron.Context) {
+		b, err := ctx.Req.Body().Bytes()
+		if err != nil {
+			ctx.Error(400, "Invalid autodiscover request")
+			return
+		}
+		var requestXML Autodiscover
+		xml.Unmarshal(b, &requestXML)
+
+		emailaddress := requestXML.Request.EMailAddress
+
+		data := map[string]interface{}{
+			"emailaddress": emailaddress,
+			"smtp_server":  config.smtpServer,
+			"imap_server":  config.imapServer,
+			"pop_server":   config.popServer,
+		}
+
+		ctx.Render.HTML(200, "autodiscover", data)
 	}
-	var requestXML Autodiscover
-	xml.Unmarshal(b, &requestXML)
-
-	emailaddress := requestXML.Request.EMailAddress
-
-	data := map[string]interface{}{
-		"emailaddress": emailaddress,
-		"smtp_server":  smtpServer,
-		"imap_server":  imapServer,
-		"pop_server":   popServer,
-	}
-
-	ctx.Render.HTML(200, "autodiscover", data)
 }

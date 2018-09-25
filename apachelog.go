@@ -23,30 +23,32 @@ type apacheLogRecord struct {
 	elapsedTime           time.Duration
 }
 
-func apacheLogHandler(ctx *macaron.Context) {
-	clientIP := ctx.Req.RemoteAddr
-	if colon := strings.LastIndex(clientIP, ":"); colon != -1 {
-		clientIP = clientIP[:colon]
+func apacheLogHandler() macaron.Handler {
+	return func(ctx *macaron.Context) {
+		clientIP := ctx.Req.RemoteAddr
+		if colon := strings.LastIndex(clientIP, ":"); colon != -1 {
+			clientIP = clientIP[:colon]
+		}
+
+		rw := ctx.Resp.(macaron.ResponseWriter)
+
+		startTime := time.Now()
+		ctx.Next()
+		finishTime := time.Now()
+
+		r := &apacheLogRecord{
+			ip:            ctx.Req.RemoteAddr,
+			time:          finishTime.UTC(),
+			method:        ctx.Req.Method,
+			uri:           ctx.Req.RequestURI,
+			protocol:      ctx.Req.Proto,
+			status:        rw.Status(),
+			elapsedTime:   finishTime.Sub(startTime),
+			responseBytes: int64(rw.Size()),
+		}
+
+		timeFormatted := r.time.Format(apacheLogTimeFormat)
+		requestLine := fmt.Sprintf("%s %s %s", r.method, r.uri, r.protocol)
+		log.Printf(apacheFormatPattern, r.ip, timeFormatted, requestLine, r.status, r.responseBytes, r.elapsedTime.Seconds())
 	}
-
-	rw := ctx.Resp.(macaron.ResponseWriter)
-
-	startTime := time.Now()
-	ctx.Next()
-	finishTime := time.Now()
-
-	r := &apacheLogRecord{
-		ip:            ctx.Req.RemoteAddr,
-		time:          finishTime.UTC(),
-		method:        ctx.Req.Method,
-		uri:           ctx.Req.RequestURI,
-		protocol:      ctx.Req.Proto,
-		status:        rw.Status(),
-		elapsedTime:   finishTime.Sub(startTime),
-		responseBytes: int64(rw.Size()),
-	}
-
-	timeFormatted := r.time.Format(apacheLogTimeFormat)
-	requestLine := fmt.Sprintf("%s %s %s", r.method, r.uri, r.protocol)
-	log.Printf(apacheFormatPattern, r.ip, timeFormatted, requestLine, r.status, r.responseBytes, r.elapsedTime.Seconds())
 }

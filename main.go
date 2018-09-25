@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-macaron/pongo2"
-	"github.com/pelletier/go-toml"
 	"gopkg.in/macaron.v1"
 )
 
@@ -23,14 +22,6 @@ const (
 	defaultCertsDir = "."
 )
 
-var (
-	email      string
-	provider   string
-	smtpServer string
-	imapServer string
-	popServer  string
-)
-
 func main() {
 	flag.Parse()
 	configFile := *configFileFlag
@@ -38,27 +29,13 @@ func main() {
 		log.Fatalf("Error: Cannot open config: %s", err)
 	}
 
-	config, err := toml.LoadFile(configFile)
-	if err != nil {
-		log.Fatalf("Config file %s is malformed: %s", configFile, err)
-	}
-
-	addr := getConfigValueDefault(config, "listen", defaultListen)
-
-	url := getConfigValueDefault(config, "letsencrypt.url", defaultURL)
-	certsDir := getConfigValueDefault(config, "letsencrypt.certs_dir", defaultCertsDir)
-	email := getConfigValue(config, "letsencrypt.email")
-
-	provider = getConfigValue(config, "mail.provider_id")
-	imapServer = getConfigValue(config, "mail.imap_server")
-	popServer = getConfigValue(config, "mail.pop3_server")
-	smtpServer = getConfigValue(config, "mail.smtp_server")
 
 	// Remove date + time from logging output (systemd adds those for us)
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
+	config := loadConfigFile(configFile)
 
 	m := macaron.New()
-	m.Use(apacheLogHandler)
+	m.Use(apacheLogHandler())
 	m.Use(macaron.Recovery())
 
 	m.Use(pongo2.Pongoer(pongo2.Options{
@@ -68,19 +45,19 @@ func main() {
 	}))
 
 	// Mozilla autoconfig
-	m.Get("/autoconfig/config-v1.1.xml", autoconfig)
+	m.Get("/autoconfig/config-v1.1.xml", autoconfigHandler(config))
 
 	// Microsoft autodiscover v1
-	m.Route("/autodiscover/autodiscover.xml", "GET, POST", autodiscover) // GET support only for debugging
-	m.Route("/Autodiscover/Autodiscover.xml", "GET, POST", autodiscover)
+	m.Route("/autodiscover/autodiscover.xml", "GET, POST", autodiscoverHandler(config)) // GET support only for debugging
+	m.Route("/Autodiscover/Autodiscover.xml", "GET, POST", autodiscoverHandler(config))
 
 	// Let's Encrypt autocert via tls-alpn-01 challenge
 	// See https://tools.ietf.org/html/draft-ietf-acme-tls-alpn-01
 
-	manager := buildAutocertManager(url, email, certsDir)
+	manager := buildAutocertManager(config.url, config.email, config.certsDir)
 
 	s := &http.Server{
-		Addr:         addr,
+		Addr:         config.listen,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second, // Enough time to handle Let's Encrypt challenge on first request for any domain
 		IdleTimeout:  120 * time.Second,
@@ -88,31 +65,13 @@ func main() {
 		TLSConfig:    &tls.Config{GetCertificate: manager.GetCertificate},
 	}
 
-	log.Printf("Let's Encrypt URL: %s\n", url)
-	log.Printf("Certificate cache directory: %s\n", certsDir)
+	log.Printf("Let's Encrypt URL: %s\n", config.url)
+	log.Printf("Certificate cache directory: %s\n", config.certsDir)
 
-	log.Printf("SMTP server: %s\n", smtpServer)
-	log.Printf("IMAP server: %s\n", imapServer)
-	log.Printf("POP3 server: %s\n", popServer)
+	log.Printf("SMTP server: %s\n", config.smtpServer)
+	log.Printf("IMAP server: %s\n", config.imapServer)
+	log.Printf("POP3 server: %s\n", config.popServer)
 
-	log.Printf("Starting HTTPS server on %s\n", addr)
+	log.Printf("Starting HTTPS server on %s\n", config.listen)
 	log.Println(s.ListenAndServeTLS("", ""))
-}
-
-func getConfigValueDefault(config *toml.Tree, key string, defaultVal string) string {
-	val := config.Get(key)
-	if val == nil {
-		return defaultVal
-	}
-
-	return val.(string)
-}
-
-func getConfigValue(config *toml.Tree, key string) string {
-	val := config.Get(key)
-	if val == nil {
-		log.Fatalf("Invalid configuration file: Mandatory setting '%s' is missing", key)
-	}
-
-	return val.(string)
 }
