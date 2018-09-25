@@ -23,15 +23,15 @@ const (
 )
 
 func main() {
+	// Remove date + time from logging output (systemd adds those for us)
+	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
+
 	flag.Parse()
 	configFile := *configFileFlag
 	if _, err := os.Stat(configFile); err != nil {
 		log.Fatalf("Error: Cannot open config: %s", err)
 	}
 
-
-	// Remove date + time from logging output (systemd adds those for us)
-	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 	config := loadConfigFile(configFile)
 
 	m := macaron.New()
