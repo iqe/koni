@@ -14,6 +14,7 @@ import (
 
 var (
 	configFileFlag = flag.String("c", "koni.conf", "Path to configuration file")
+	version        = "undefined" // updated during release build
 )
 
 const (
