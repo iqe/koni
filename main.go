@@ -66,6 +66,7 @@ func main() {
 		TLSConfig:    &tls.Config{GetCertificate: manager.GetCertificate},
 	}
 
+	log.Printf("Starting koni %s...\n", version)
 	log.Printf("Let's Encrypt URL: %s\n", config.url)
 	log.Printf("Certificate cache directory: %s\n", config.certsDir)
 
@@ -73,6 +74,6 @@ func main() {
 	log.Printf("IMAP server: %s\n", config.imapServer)
 	log.Printf("POP3 server: %s\n", config.popServer)
 
-	log.Printf("Starting HTTPS server on %s\n", config.listen)
+	log.Printf("HTTPS server listening on %s\n", config.listen)
 	log.Println(s.ListenAndServeTLS("", ""))
 }
