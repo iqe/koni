@@ -38,29 +38,9 @@ If a user configures their email client, the following happens:
 5. Koni sends HTTP response to client, with valid TLS cert.
 6. Mail client proceeds with auto config of the user's email account
 
-
 ## Configuration
 
 See comments in `koni.conf`.
-
-## Usage
-
-For each domain you want to handle, add the following CNAME entries to DNS:
-
-```
-CNAME autoconfig.userdomain.com    -> koni.mydomain.com
-CNAME autodiscover.userdomain.com  -> koni.mydomain.com
-```
-
-If a user now configures their email client, the following happens:
-
-1. User starts mail configuration on the client, enters email address `user@userdomain.com`.
-2. Mail client looks up `autoconfig.userdomain.com` (Mozilla and others) or `autodiscover.userdomain.com` (Microsoft and others)
-3. Mail client sends HTTP request to the domain
-4. Koni looks for a certificate of `autoconfig.userdomain.com` / `autodiscover.userdomain.com` in its certs cache dir. If there is no cert or the cert is expired, koni requests a certificate from Let's Encrypt for the requested domain
-5. Koni sends HTTP response to client, with valid TLS cert.
-6. Mail client proceeds with auto config of the user's email account
-
 
 ## Contributing / Building
 
