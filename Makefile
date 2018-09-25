@@ -1,5 +1,5 @@
 
-VERSION := $(shell git describe --always --long --dirty)
+VERSION := $(shell git describe --always --dirty)
 
 RELEASE_DIR := koni-$(VERSION)
 RELEASE_FILE := koni-$(VERSION).tar.gz
