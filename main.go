@@ -4,9 +4,9 @@ import (
 	"crypto/tls"
 	"flag"
 	"log"
-	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-macaron/pongo2"
@@ -87,13 +87,7 @@ func main() {
 	log.Printf("HTTP server listening on %s\n", config.listenHTTP)
 	go func() {
 		err := http.ListenAndServe(config.listenHTTP, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			host, _, err := net.SplitHostPort(r.Host)
-			if err != nil {
-				log.Printf("Error during HTTP to HTTPS redirect for %s: %v", r.Host, err)
-				http.Error(w, "Bad request", http.StatusBadRequest)
-				return
-			}
-
+			host := strings.Split(r.Host, ":")[0]
 			http.Redirect(w, r, "https://"+host+r.RequestURI, http.StatusMovedPermanently)
 		}))
 
