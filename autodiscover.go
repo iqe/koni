@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/xml"
+	"log"
 
 	macaron "gopkg.in/macaron.v1"
 )
@@ -28,7 +29,8 @@ func autodiscoverHandler(config koniConfig) macaron.Handler {
 	return func(ctx *macaron.Context) {
 		b, err := ctx.Req.Body().Bytes()
 		if err != nil {
-			ctx.Error(400, "Invalid autodiscover request")
+			log.Printf("koni: Failed to read autodiscover body bytes: %v\n", err)
+			ctx.Error(400, "Invalid request")
 			return
 		}
 		var requestXML autodiscover
