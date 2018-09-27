@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/go-macaron/pongo2"
@@ -83,13 +82,10 @@ func main() {
 	log.Printf("IMAP server: %s\n", config.imapServer)
 	log.Printf("POP3 server: %s\n", config.popServer)
 
-	// Redirect all HTTP traffic to HTTPS
 	log.Printf("HTTP server listening on %s\n", config.listenHTTP)
 	go func() {
-		err := http.ListenAndServe(config.listenHTTP, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			host := strings.Split(r.Host, ":")[0]
-			http.Redirect(w, r, "https://"+host+r.RequestURI, http.StatusMovedPermanently)
-		}))
+		// This handles ACME http-01 challenges and additionally serves all content over HTTP
+		err := http.ListenAndServe(config.listenHTTP, manager.HTTPHandler(m))
 
 		if err != nil {
 			log.Fatalf("Failed to listen on %s: %v\n", config.listenHTTP, err)
