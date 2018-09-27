@@ -14,7 +14,7 @@ These are the basic steps needed to install koni:
 
    On Linux there are various methods to do this. See e.g. https://superuser.com/questions/710253/allow-non-root-process-to-bind-to-port-80-and-443
 
-   You could also setup a reverse proxy like nginx
+   You could also setup a tcp proxy like[haproxy](https://www.haproxy.org/)
 
 6. Run koni (through systemd or directly)
 
@@ -27,7 +27,13 @@ CNAME autoconfig.userdomain.com    -> koniserver.mydomain.com
 CNAME autodiscover.userdomain.com  -> koniserver.mydomain.com
 ```
 
-Koni listens for HTTPS requests on `koniserver.mydomain.com` and responds to any clients that request an URL from a `autoconfig.*` or `autodiscover.*` host.
+Additionally, you can set up a SRV record for clients that only used the SRV record during Autodiscover:
+
+```
+SRV _autodiscover._tcp.userdomain.com -> koniserver.mydomain.com:443
+```
+
+Koni listens for HTTPS requests on `koniserver.mydomain.com` and responds to any clients that request an URL from a `autoconfig.*` or `autodiscover.*` host or directly from `koniserver.mydomain.com`.
 
 If a user configures their email client, the following happens:
 
@@ -48,4 +54,7 @@ See comments in `koni.conf`.
 2. Install [dep](https://golang.github.io/dep/) for dependency management
 3. Run `make deps` to install/update the vendored dependencies
 4. Hack on the code
-5. Run `make release` to build a release package
+5. Run `git tag -a v<NEW VERSION>`
+6. Run `make release` to build a release package
+7. Run `git push --tags` to push changes to GitHub
+8. Upload the release to GitHub
