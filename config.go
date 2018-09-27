@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	toml "github.com/pelletier/go-toml"
 )
@@ -21,6 +22,10 @@ type koniConfig struct {
 }
 
 func loadConfigFile(configFile string) koniConfig {
+	if _, err := os.Stat(configFile); err != nil {
+		log.Fatalf("Failed to open config file: %s", err)
+	}
+
 	tomlConfig, err := toml.LoadFile(configFile)
 	if err != nil {
 		log.Fatalf("Config file %s is malformed: %s", configFile, err)

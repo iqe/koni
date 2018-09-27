@@ -36,12 +36,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	configFile := *configFileFlag
-	if _, err := os.Stat(configFile); err != nil {
-		log.Fatalf("Error: Cannot open config: %s", err)
-	}
-
-	config := loadConfigFile(configFile)
+	config := loadConfigFile(*configFileFlag)
 
 	m := macaron.New()
 	m.Use(apacheLogHandler())
