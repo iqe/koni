@@ -50,6 +50,7 @@ func main() {
 
 	// Mozilla autoconfig
 	m.Get("/mail/config-v1.1.xml", autoconfigHandler(config))
+	m.Get("/.well-known/autoconfig/mail/config-v1.1.xml", autoconfigHandler(config))
 
 	// Microsoft autodiscover v1
 	m.Route("/autodiscover/autodiscover.xml", "GET, POST", autodiscoverHandler(config)) // GET support only for debugging
