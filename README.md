@@ -27,7 +27,7 @@ CNAME autoconfig.userdomain.com    -> koniserver.mydomain.com
 CNAME autodiscover.userdomain.com  -> koniserver.mydomain.com
 ```
 
-Additionally, you can set up a SRV record for clients that only used the SRV record during Autodiscover:
+Additionally, you can set up a SRV record for clients that only use the SRV record during Autodiscover:
 
 ```
 SRV _autodiscover._tcp.userdomain.com -> koniserver.mydomain.com:443
