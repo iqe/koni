@@ -8,6 +8,8 @@ import (
 )
 
 type koniConfig struct {
+	debug bool
+
 	listenHTTP  string
 	listenHTTPS string
 
@@ -32,6 +34,7 @@ func loadConfigFile(configFile string) koniConfig {
 	}
 
 	return koniConfig{
+		debug:       getBoolConfigValueDefault(tomlConfig, "debug", defaultDebug),
 		listenHTTP:  getConfigValueDefault(tomlConfig, "listen_http", defaultListenHTTP),
 		listenHTTPS: getConfigValueDefault(tomlConfig, "listen_https", defaultListenHTTPS),
 		url:         getConfigValueDefault(tomlConfig, "letsencrypt.url", defaultURL),
@@ -60,4 +63,13 @@ func getConfigValue(config *toml.Tree, key string) string {
 	}
 
 	return val.(string)
+}
+
+func getBoolConfigValueDefault(config *toml.Tree, key string, defaultVal bool) bool {
+	defaultStringValue := "no"
+	if defaultVal {
+		defaultStringValue = "yes"
+	}
+
+	return getConfigValueDefault(config, key, defaultStringValue) == "yes"
 }
