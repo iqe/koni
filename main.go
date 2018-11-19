@@ -61,6 +61,9 @@ func main() {
 	m.Route("/autodiscover/autodiscover.xml", "GET, POST", autodiscoverxmlHandler(config)) // GET support only for debugging
 	m.Route("/Autodiscover/Autodiscover.xml", "GET, POST", autodiscoverxmlHandler(config))
 
+	// Microsoft autodiscover JSON
+	m.Get("/autodiscover/autodiscover.json", autodiscoverjsonHandler())
+
 	// Let's Encrypt autocert via tls-alpn-01 challenge
 	// See https://tools.ietf.org/html/draft-ietf-acme-tls-alpn-01
 
