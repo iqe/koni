@@ -58,8 +58,8 @@ func main() {
 	m.Get("/.well-known/autoconfig/mail/config-v1.1.xml", autoconfigHandler(config))
 
 	// Microsoft autodiscover v1
-	m.Route("/autodiscover/autodiscover.xml", "GET, POST", autodiscoverHandler(config)) // GET support only for debugging
-	m.Route("/Autodiscover/Autodiscover.xml", "GET, POST", autodiscoverHandler(config))
+	m.Route("/autodiscover/autodiscover.xml", "GET, POST", autodiscoverxmlHandler(config)) // GET support only for debugging
+	m.Route("/Autodiscover/Autodiscover.xml", "GET, POST", autodiscoverxmlHandler(config))
 
 	// Let's Encrypt autocert via tls-alpn-01 challenge
 	// See https://tools.ietf.org/html/draft-ietf-acme-tls-alpn-01

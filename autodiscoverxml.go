@@ -25,7 +25,7 @@ type request struct {
 	AcceptableResponseSchema string
 }
 
-func autodiscoverHandler(config koniConfig) macaron.Handler {
+func autodiscoverxmlHandler(config koniConfig) macaron.Handler {
 	return func(ctx *macaron.Context) {
 		b, err := ctx.Req.Body().Bytes()
 		if err != nil {
