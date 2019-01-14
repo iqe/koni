@@ -64,6 +64,9 @@ func main() {
 	// Microsoft autodiscover JSON
 	m.Get("/autodiscover/autodiscover.json", autodiscoverjsonHandler())
 
+	// Apple iOS mobileconfig
+	m.Get("/mobileconfig.xml", mobileconfigHandler(config))
+
 	// Let's Encrypt autocert via tls-alpn-01 challenge
 	// See https://tools.ietf.org/html/draft-ietf-acme-tls-alpn-01
 
