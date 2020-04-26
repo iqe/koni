@@ -3,19 +3,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:df284f67687dbac039656a8d5272aa2a5ccd87a8bb34e8118ef5094f8b301034"
-  name = "github.com/Unknwon/com"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "da59b551951d50441ca26b7a8cd81317f34df87f"
-
-[[projects]]
-  branch = "master"
-  digest = "1:21b9131fddca407b60999864676deeaa3d81626eef996658c3828628b9ce0b9c"
+  digest = "1:26bbc079845bd5a2e718a273b6a2f746af02ee4055a7ff58d0980085e7642748"
   name = "github.com/flosch/pongo2"
   packages = ["."]
   pruneopts = "UT"
-  revision = "24195e6d38b06020d7a92c7b11960cf2e7cad2f2"
+  revision = "bbf5a6c351f4d4e883daa40046a404d7553e0a00"
 
 [[projects]]
   branch = "master"
@@ -23,35 +15,51 @@
   name = "github.com/go-macaron/inject"
   packages = ["."]
   pruneopts = "UT"
-  revision = "d8a0b8677191f4380287cfebd08e462217bac7ad"
+  revision = "138e5925c53bc4b58f90b4787ad7a682c4c6498f"
 
 [[projects]]
   branch = "master"
-  digest = "1:1d5ac91c365570b70b60dc467b3214ab67dc03abb08a3151e359ecf856e79078"
+  digest = "1:03e4c7da5f48a290ec28e009f5d4d4e6aab107fcecbf0bdc70ef35d1fdc49ba8"
   name = "github.com/go-macaron/pongo2"
   packages = ["."]
   pruneopts = "UT"
-  revision = "6074d2551820567d6b1e393b0f4fb4f85745425a"
+  revision = "6ca146b415a1c2179c9613f6de8bf88531a14473"
+
+[[projects]]
+  digest = "1:bed9d72d596f94e65fff37f4d6c01398074a6bb1c3f3ceff963516bd01db6ff5"
+  name = "github.com/gofrs/uuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "6b08a5c5172ba18946672b49749cde22873dd7c2"
+  version = "v3.2.0"
 
 [[projects]]
   branch = "master"
-  digest = "1:1261ccace00babbf02bb702e71c85c8e81f65bad7bdb98c12c7a409c14de1d86"
+  digest = "1:833e360665aed0fee041fbe8099ffc532cb3b250f430d6669e4ac772c3859268"
   name = "github.com/juju/errors"
   packages = ["."]
   pruneopts = "UT"
-  revision = "22422dad46e14561a0854ad42497a75af9b61909"
+  revision = "3fe23663418fc1d724868c84f21b7519bbac7441"
 
 [[projects]]
-  digest = "1:95741de3af260a92cc5c7f3f3061e85273f5a81b5db20d4bd68da74bd521675e"
+  digest = "1:1d835d5c3153aceef96c2d58866edde1aa70e25339831cff07b1e47456410e5c"
   name = "github.com/pelletier/go-toml"
   packages = ["."]
   pruneopts = "UT"
-  revision = "c01d1270ff3e442a8a57cddc1c92dc1138598194"
-  version = "v1.2.0"
+  revision = "8e8d2a6aad23fcaa64716c5fa6975ec3abbf8281"
+  version = "v1.7.0"
+
+[[projects]]
+  digest = "1:b67d9fb93495f20c1650448395a35d8c8a05cc1744bdd9986f5bc69d5d114f22"
+  name = "github.com/unknwon/com"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "41959bdd855fb7db467f78865d5f9044507df1cd"
+  version = "v2"
 
 [[projects]]
   branch = "master"
-  digest = "1:773658e839757eac268eaaf2efca19f11695f49f52a65c18777e7673d27bfb86"
+  digest = "1:9f1c97be535e523c94d491d7b44ce1a0af5a74a1479dfc96229299f26d3acfc5"
   name = "golang.org/x/crypto"
   packages = [
     "acme",
@@ -59,29 +67,63 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
+  revision = "44a6062868251b249d52ec1c39797568f724bdca"
 
 [[projects]]
-  digest = "1:5abd6a22805b1919f6a6bca0ae58b13cef1f3412812f38569978f43ef02743d4"
+  branch = "master"
+  digest = "1:d1f7edf951b9cc444358a31de2f4e4c1c5c539ea9c6aca13f5bf92eb1124fc4b"
+  name = "golang.org/x/net"
+  packages = ["idna"]
+  pruneopts = "UT"
+  revision = "e086a090c8fdb9982880f0fb6e3db47af1856533"
+
+[[projects]]
+  digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
+  name = "golang.org/x/text"
+  packages = [
+    "collate",
+    "collate/build",
+    "internal/colltab",
+    "internal/gen",
+    "internal/language",
+    "internal/language/compact",
+    "internal/tag",
+    "internal/triegen",
+    "internal/ucd",
+    "language",
+    "secure/bidirule",
+    "transform",
+    "unicode/bidi",
+    "unicode/cldr",
+    "unicode/norm",
+    "unicode/rangetable",
+  ]
+  pruneopts = "UT"
+  revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
+  version = "v0.3.2"
+
+[[projects]]
+  digest = "1:a064971c78455f088b48483cf48a61dbe2f173dc02043cf76a06e19acba3c5e4"
   name = "gopkg.in/ini.v1"
   packages = ["."]
   pruneopts = "UT"
-  revision = "5cf292cae48347c2490ac1a58fe36735fb78df7e"
-  version = "v1.38.2"
+  revision = "39bc4ddcb8b9d0100f7a040816380ccda878b94a"
+  version = "v1.55.0"
 
 [[projects]]
-  digest = "1:2b9d0210e4b76b44216180f37b47cc145827ee628e788cea142483eb958a2b9d"
+  digest = "1:5533eecc89cf68054791a105305f5f84d53b2cb8be2447274e07c6c1947c31a0"
   name = "gopkg.in/macaron.v1"
   packages = ["."]
   pruneopts = "UT"
-  revision = "c1be95e6d21e769e44e1ec33cec9da5837861c10"
-  version = "v1.3.1"
+  revision = "599331394d543e20d628f120837b48e37b40eaba"
+  version = "v1.3.5"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/go-macaron/pongo2",
+    "github.com/gofrs/uuid",
     "github.com/pelletier/go-toml",
     "golang.org/x/crypto/acme",
     "golang.org/x/crypto/acme/autocert",
