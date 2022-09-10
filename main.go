@@ -22,7 +22,7 @@ const (
 	defaultDebug       = false
 	defaultListenHTTP  = "127.0.0.1:4080"
 	defaultListenHTTPS = "127.0.0.1:4443"
-	defaultURL         = "https://acme-staging.api.letsencrypt.org/directory"
+	defaultURL         = "https://acme-staging-v02.api.letsencrypt.org/directory"
 	defaultCertsDir    = "."
 )
 
