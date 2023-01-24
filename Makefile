@@ -4,7 +4,7 @@ VERSION := $(shell git describe --always --dirty)
 RELEASE_DIR := koni-$(VERSION)
 RELEASE_FILE := koni-$(VERSION).tar.gz
 
-.PHONY: release deps
+.PHONY: release
 release:
 		rm -rf release || true
 		mkdir -p release/$(RELEASE_DIR)
@@ -13,6 +13,3 @@ release:
 		cp -r templates release/$(RELEASE_DIR)
 		cd release && mkdir -p $(RELEASE_DIR)/certs
 		cd release && tar czf $(RELEASE_FILE) $(RELEASE_DIR)
-
-deps:
-	dep ensure

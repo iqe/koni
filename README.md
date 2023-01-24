@@ -51,8 +51,6 @@ See comments in `koni.conf`.
 ## Contributing / Building
 
 1. Clone the repo
-2. Install [dep](https://golang.github.io/dep/) for dependency management
-3. Run `make deps` to install/update the vendored dependencies
 4. Hack on the code
 5. Run `git tag -a v<NEW VERSION>`
 6. Run `make release` to build a release package
