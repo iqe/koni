@@ -78,7 +78,9 @@ func main() {
 		WriteTimeout: 30 * time.Second, // Enough time to handle Let's Encrypt challenge on first request for any domain
 		IdleTimeout:  120 * time.Second,
 		Handler:      m,
-		TLSConfig:    &tls.Config{MinVersion: tls.VersionTLS12, GetCertificate: manager.GetCertificate},
+		TLSConfig: &tls.Config{
+			NextProtos: []string{"h2", "http/1.1", "acme-tls/1"},
+			MinVersion: tls.VersionTLS12, GetCertificate: manager.GetCertificate},
 	}
 
 	log.Printf("Starting koni %s...\n", version)
