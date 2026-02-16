@@ -1,14 +1,21 @@
 package main
 
 import (
+	"regexp"
 	"strings"
 
 	macaron "gopkg.in/macaron.v1"
 )
 
+var emailRegexp = regexp.MustCompile(`^[^\s@]+@[^\s@]+$`)
+
 func autoconfigHandler(config koniConfig) macaron.Handler {
 	return func(ctx *macaron.Context) {
 		emailaddress := ctx.Req.URL.Query().Get("emailaddress")
+		if !validateEmail(emailaddress) {
+			ctx.Error(400, "Invalid email address")
+			return
+		}
 		user, domain := splitEmail(emailaddress)
 
 		data := map[string]interface{}{
@@ -23,6 +30,10 @@ func autoconfigHandler(config koniConfig) macaron.Handler {
 
 		ctx.Render.HTML(200, "autoconfig", data)
 	}
+}
+
+func validateEmail(email string) bool {
+	return emailRegexp.MatchString(email)
 }
 
 func splitEmail(emailaddress string) (string, string) {

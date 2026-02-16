@@ -53,7 +53,12 @@ func getConfigValueDefault(config *toml.Tree, key string, defaultVal string) str
 		return defaultVal
 	}
 
-	return val.(string)
+	s, ok := val.(string)
+	if !ok {
+		log.Fatalf("Invalid configuration file: Setting '%s' must be a string", key)
+	}
+
+	return s
 }
 
 func getConfigValue(config *toml.Tree, key string) string {
@@ -62,7 +67,12 @@ func getConfigValue(config *toml.Tree, key string) string {
 		log.Fatalf("Invalid configuration file: Mandatory setting '%s' is missing", key)
 	}
 
-	return val.(string)
+	s, ok := val.(string)
+	if !ok {
+		log.Fatalf("Invalid configuration file: Setting '%s' must be a string", key)
+	}
+
+	return s
 }
 
 func getBoolConfigValueDefault(config *toml.Tree, key string, defaultVal bool) bool {

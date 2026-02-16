@@ -7,9 +7,18 @@ import (
 	macaron "gopkg.in/macaron.v1"
 )
 
+func sanitizeForHeader(s string) string {
+	replacer := strings.NewReplacer("\"", "", "\r", "", "\n", "")
+	return replacer.Replace(s)
+}
+
 func mobileconfigHandler(config koniConfig) macaron.Handler {
 	return func(ctx *macaron.Context) {
 		emailaddress := ctx.Req.URL.Query().Get("emailaddress")
+		if !validateEmail(emailaddress) {
+			ctx.Error(400, "Invalid email address")
+			return
+		}
 
 		payloadUUID1, _ := uuid.NewV4()
 		payloadUUID2, _ := uuid.NewV4()
@@ -25,7 +34,7 @@ func mobileconfigHandler(config koniConfig) macaron.Handler {
 			"payload_uuid2":        payloadUUID2.String(),
 		}
 
-		ctx.Resp.Header().Set("Content-Disposition", "attachment; filename=\"" + emailaddress + ".mobileconfig\"")
+		ctx.Resp.Header().Set("Content-Disposition", "attachment; filename=\""+sanitizeForHeader(emailaddress)+".mobileconfig\"")
 		ctx.Render.HTML(200, "mobileconfig", data)
 	}
 }

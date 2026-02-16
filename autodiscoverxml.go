@@ -34,9 +34,17 @@ func autodiscoverxmlHandler(config koniConfig) macaron.Handler {
 			return
 		}
 		var requestXML autodiscover
-		xml.Unmarshal(b, &requestXML)
+		if err := xml.Unmarshal(b, &requestXML); err != nil {
+			log.Printf("koni: Failed to parse autodiscover XML: %v\n", err)
+			ctx.Error(400, "Invalid XML")
+			return
+		}
 
 		emailaddress := requestXML.Request.EMailAddress
+		if !validateEmail(emailaddress) {
+			ctx.Error(400, "Invalid email address")
+			return
+		}
 
 		data := map[string]interface{}{
 			"emailaddress": emailaddress,

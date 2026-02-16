@@ -72,6 +72,14 @@ func main() {
 
 	manager := buildAutocertManager(config.url, config.email, config.certsDir)
 
+	// Handler to redirect HTTP to HTTPS
+	mRedirectToHttps := macaron.New()
+	mRedirectToHttps.Use(apacheLogHandler())
+	mRedirectToHttps.Use(macaron.Recovery())
+	mRedirectToHttps.Any(("/*"), func(ctx *macaron.Context) {
+		ctx.Redirect("https://"+ctx.Req.Host+ctx.Req.RequestURI, http.StatusMovedPermanently)
+	})
+
 	s := &http.Server{
 		Addr:         config.listenHTTPS,
 		ReadTimeout:  30 * time.Second,
@@ -94,7 +102,7 @@ func main() {
 	log.Printf("HTTP server listening on %s\n", config.listenHTTP)
 	go func() {
 		// This handles ACME http-01 challenges and additionally serves all content over HTTP
-		err := http.ListenAndServe(config.listenHTTP, manager.HTTPHandler(m))
+		err := http.ListenAndServe(config.listenHTTP, manager.HTTPHandler(mRedirectToHttps))
 
 		if err != nil {
 			log.Fatalf("Failed to listen on %s: %v\n", config.listenHTTP, err)
