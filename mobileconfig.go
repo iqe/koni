@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/flosch/pongo2/v6"
-	"github.com/gofrs/uuid"
+	"github.com/gofrs/uuid/v5"
 )
 
 func sanitizeForHeader(s string) string {
@@ -52,7 +52,7 @@ func mobileconfigHandler(config koniConfig) http.HandlerFunc {
 }
 
 func createPayloadIdentifier(emailaddress string, provider string) string {
-	a := strings.Replace(emailaddress, "@", ".", -1)
+	a := strings.ReplaceAll(emailaddress, "@", ".")
 	b := strings.Split(a, ".")
 	b = append(b, "mobileconfig")
 	b = append(b, provider)

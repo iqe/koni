@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	toml "github.com/pelletier/go-toml"
+	toml "github.com/pelletier/go-toml/v2"
 )
 
 type koniConfig struct {
@@ -23,63 +23,69 @@ type koniConfig struct {
 	smtpServer string
 }
 
+type tomlConfig struct {
+	Debug       string           `toml:"debug"`
+	ListenHTTP  string           `toml:"listen_http"`
+	ListenHTTPS string           `toml:"listen_https"`
+	LetsEncrypt tomlLetsEncrypt  `toml:"letsencrypt"`
+	Mail        tomlMail         `toml:"mail"`
+}
+
+type tomlLetsEncrypt struct {
+	URL      string `toml:"url"`
+	CertsDir string `toml:"certs_dir"`
+	Email    string `toml:"email"`
+}
+
+type tomlMail struct {
+	ProviderID string `toml:"provider_id"`
+	IMAPServer string `toml:"imap_server"`
+	POP3Server string `toml:"pop3_server"`
+	SMTPServer string `toml:"smtp_server"`
+}
+
 func loadConfigFile(configFile string) koniConfig {
-	if _, err := os.Stat(configFile); err != nil {
+	data, err := os.ReadFile(configFile)
+	if err != nil {
 		log.Fatalf("Failed to open config file: %s", err)
 	}
 
-	tomlConfig, err := toml.LoadFile(configFile)
-	if err != nil {
+	var cfg tomlConfig
+	if err := toml.Unmarshal(data, &cfg); err != nil {
 		log.Fatalf("Config file %s is malformed: %s", configFile, err)
 	}
 
+	requireNonEmpty := func(val, key string) string {
+		if val == "" {
+			log.Fatalf("Invalid configuration file: Mandatory setting '%s' is missing", key)
+		}
+		return val
+	}
+
 	return koniConfig{
-		debug:       getBoolConfigValueDefault(tomlConfig, "debug", defaultDebug),
-		listenHTTP:  getConfigValueDefault(tomlConfig, "listen_http", defaultListenHTTP),
-		listenHTTPS: getConfigValueDefault(tomlConfig, "listen_https", defaultListenHTTPS),
-		url:         getConfigValueDefault(tomlConfig, "letsencrypt.url", defaultURL),
-		certsDir:    getConfigValueDefault(tomlConfig, "letsencrypt.certs_dir", defaultCertsDir),
-		email:       getConfigValue(tomlConfig, "letsencrypt.email"),
-		provider:    getConfigValue(tomlConfig, "mail.provider_id"),
-		imapServer:  getConfigValue(tomlConfig, "mail.imap_server"),
-		popServer:   getConfigValue(tomlConfig, "mail.pop3_server"),
-		smtpServer:  getConfigValue(tomlConfig, "mail.smtp_server"),
+		debug:       stringDefault(cfg.Debug, boolToString(defaultDebug)) == "yes",
+		listenHTTP:  stringDefault(cfg.ListenHTTP, defaultListenHTTP),
+		listenHTTPS: stringDefault(cfg.ListenHTTPS, defaultListenHTTPS),
+		url:         stringDefault(cfg.LetsEncrypt.URL, defaultURL),
+		certsDir:    stringDefault(cfg.LetsEncrypt.CertsDir, defaultCertsDir),
+		email:       requireNonEmpty(cfg.LetsEncrypt.Email, "letsencrypt.email"),
+		provider:    requireNonEmpty(cfg.Mail.ProviderID, "mail.provider_id"),
+		imapServer:  requireNonEmpty(cfg.Mail.IMAPServer, "mail.imap_server"),
+		popServer:   requireNonEmpty(cfg.Mail.POP3Server, "mail.pop3_server"),
+		smtpServer:  requireNonEmpty(cfg.Mail.SMTPServer, "mail.smtp_server"),
 	}
 }
 
-func getConfigValueDefault(config *toml.Tree, key string, defaultVal string) string {
-	val := config.Get(key)
-	if val == nil {
+func stringDefault(val, defaultVal string) string {
+	if val == "" {
 		return defaultVal
 	}
-
-	s, ok := val.(string)
-	if !ok {
-		log.Fatalf("Invalid configuration file: Setting '%s' must be a string", key)
-	}
-
-	return s
+	return val
 }
 
-func getConfigValue(config *toml.Tree, key string) string {
-	val := config.Get(key)
-	if val == nil {
-		log.Fatalf("Invalid configuration file: Mandatory setting '%s' is missing", key)
+func boolToString(b bool) string {
+	if b {
+		return "yes"
 	}
-
-	s, ok := val.(string)
-	if !ok {
-		log.Fatalf("Invalid configuration file: Setting '%s' must be a string", key)
-	}
-
-	return s
-}
-
-func getBoolConfigValueDefault(config *toml.Tree, key string, defaultVal bool) bool {
-	defaultStringValue := "no"
-	if defaultVal {
-		defaultStringValue = "yes"
-	}
-
-	return getConfigValueDefault(config, key, defaultStringValue) == "yes"
+	return "no"
 }
