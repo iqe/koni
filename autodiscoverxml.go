@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/xml"
+	"io"
 	"log"
+	"net/http"
 
-	macaron "gopkg.in/macaron.v1"
+	"github.com/flosch/pongo2/v6"
 )
 
 // Autodiscover request:
@@ -25,34 +27,36 @@ type request struct {
 	AcceptableResponseSchema string
 }
 
-func autodiscoverxmlHandler(config koniConfig) macaron.Handler {
-	return func(ctx *macaron.Context) {
-		b, err := ctx.Req.Body().Bytes()
+func autodiscoverxmlHandler(config koniConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
+
+		b, err := io.ReadAll(r.Body)
 		if err != nil {
 			log.Printf("koni: Failed to read autodiscover body bytes: %v\n", err)
-			ctx.Error(400, "Invalid request")
+			http.Error(w, "Invalid request", http.StatusBadRequest)
 			return
 		}
 		var requestXML autodiscover
 		if err := xml.Unmarshal(b, &requestXML); err != nil {
 			log.Printf("koni: Failed to parse autodiscover XML: %v\n", err)
-			ctx.Error(400, "Invalid XML")
+			http.Error(w, "Invalid XML", http.StatusBadRequest)
 			return
 		}
 
 		emailaddress := requestXML.Request.EMailAddress
 		if !validateEmail(emailaddress) {
-			ctx.Error(400, "Invalid email address")
+			http.Error(w, "Invalid email address", http.StatusBadRequest)
 			return
 		}
 
-		data := map[string]interface{}{
+		data := pongo2.Context{
 			"emailaddress": emailaddress,
 			"smtp_server":  config.smtpServer,
 			"imap_server":  config.imapServer,
 			"pop_server":   config.popServer,
 		}
 
-		ctx.Render.HTML(200, "autodiscover", data)
+		renderTemplate(w, "autodiscover", http.StatusOK, data)
 	}
 }

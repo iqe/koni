@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 	"time"
-
-	"gopkg.in/macaron.v1"
 )
 
 const (
@@ -23,32 +22,49 @@ type apacheLogRecord struct {
 	elapsedTime           time.Duration
 }
 
-func apacheLogHandler() macaron.Handler {
-	return func(ctx *macaron.Context) {
-		clientIP := ctx.Req.RemoteAddr
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+	size   int
+}
+
+func (r *statusRecorder) WriteHeader(code int) {
+	r.status = code
+	r.ResponseWriter.WriteHeader(code)
+}
+
+func (r *statusRecorder) Write(b []byte) (int, error) {
+	n, err := r.ResponseWriter.Write(b)
+	r.size += n
+	return n, err
+}
+
+func apacheLogHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		clientIP := r.RemoteAddr
 		if colon := strings.LastIndex(clientIP, ":"); colon != -1 {
 			clientIP = clientIP[:colon]
 		}
 
-		rw := ctx.Resp.(macaron.ResponseWriter)
+		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 
 		startTime := time.Now()
-		ctx.Next()
+		next.ServeHTTP(rec, r)
 		finishTime := time.Now()
 
-		r := &apacheLogRecord{
-			ip:            ctx.Req.RemoteAddr,
+		record := &apacheLogRecord{
+			ip:            r.RemoteAddr,
 			time:          finishTime.UTC(),
-			method:        ctx.Req.Method,
-			uri:           ctx.Req.RequestURI,
-			protocol:      ctx.Req.Proto,
-			status:        rw.Status(),
+			method:        r.Method,
+			uri:           r.RequestURI,
+			protocol:      r.Proto,
+			status:        rec.status,
 			elapsedTime:   finishTime.Sub(startTime),
-			responseBytes: int64(rw.Size()),
+			responseBytes: int64(rec.size),
 		}
 
-		timeFormatted := r.time.Format(apacheLogTimeFormat)
-		requestLine := fmt.Sprintf("%s %s %s", r.method, r.uri, r.protocol)
-		log.Printf(apacheFormatPattern, r.ip, timeFormatted, requestLine, r.status, r.responseBytes, r.elapsedTime.Seconds())
-	}
+		timeFormatted := record.time.Format(apacheLogTimeFormat)
+		requestLine := fmt.Sprintf("%s %s %s", record.method, record.uri, record.protocol)
+		log.Printf(apacheFormatPattern, record.ip, timeFormatted, requestLine, record.status, record.responseBytes, record.elapsedTime.Seconds())
+	})
 }

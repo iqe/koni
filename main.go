@@ -8,14 +8,17 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-macaron/pongo2"
-	"gopkg.in/macaron.v1"
+	"github.com/flosch/pongo2/v6"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 var (
 	versionFlag    = flag.Bool("V", false, "Print version and exit")
 	configFileFlag = flag.String("c", "koni.conf", "Path to configuration file")
 	version        = "undefined" // updated during release build
+
+	templateSet *pongo2.TemplateSet
 )
 
 const (
@@ -39,33 +42,32 @@ func main() {
 
 	config := loadConfigFile(*configFileFlag)
 
-	m := macaron.New()
-	m.Use(apacheLogHandler())
-	m.Use(macaron.Recovery())
+	templateSet = pongo2.NewSet("templates", pongo2.MustNewLocalFileSystemLoader("templates"))
+
+	r := chi.NewRouter()
+	r.Use(apacheLogHandler)
+	r.Use(middleware.Recoverer)
 
 	if config.debug {
-		m.Use(debugLogHandler())
+		r.Use(debugLogHandler)
 	}
 
-	m.Use(pongo2.Pongoer(pongo2.Options{
-		Directory:       "templates",
-		Extensions:      []string{".xml.j2"},
-		HTMLContentType: "text/xml",
-	}))
-
 	// Mozilla autoconfig
-	m.Get("/mail/config-v1.1.xml", autoconfigHandler(config))
-	m.Get("/.well-known/autoconfig/mail/config-v1.1.xml", autoconfigHandler(config))
+	r.Get("/mail/config-v1.1.xml", autoconfigHandler(config))
+	r.Get("/.well-known/autoconfig/mail/config-v1.1.xml", autoconfigHandler(config))
 
 	// Microsoft autodiscover v1
-	m.Route("/autodiscover/autodiscover.xml", "GET, POST", autodiscoverxmlHandler(config)) // GET support only for debugging
-	m.Route("/Autodiscover/Autodiscover.xml", "GET, POST", autodiscoverxmlHandler(config))
+	autodiscoverXML := autodiscoverxmlHandler(config)
+	r.Get("/autodiscover/autodiscover.xml", autodiscoverXML)
+	r.Post("/autodiscover/autodiscover.xml", autodiscoverXML)
+	r.Get("/Autodiscover/Autodiscover.xml", autodiscoverXML)
+	r.Post("/Autodiscover/Autodiscover.xml", autodiscoverXML)
 
 	// Microsoft autodiscover JSON
-	m.Get("/autodiscover/autodiscover.json", autodiscoverjsonHandler())
+	r.Get("/autodiscover/autodiscover.json", autodiscoverjsonHandler())
 
 	// Apple iOS mobileconfig
-	m.Get("/mobileconfig.xml", mobileconfigHandler(config))
+	r.Get("/mobileconfig.xml", mobileconfigHandler(config))
 
 	// Let's Encrypt autocert via tls-alpn-01 challenge
 	// See https://tools.ietf.org/html/draft-ietf-acme-tls-alpn-01
@@ -73,11 +75,9 @@ func main() {
 	manager := buildAutocertManager(config.url, config.email, config.certsDir)
 
 	// Handler to redirect HTTP to HTTPS
-	mRedirectToHttps := macaron.New()
-	mRedirectToHttps.Use(apacheLogHandler())
-	mRedirectToHttps.Use(macaron.Recovery())
-	mRedirectToHttps.Any(("/*"), func(ctx *macaron.Context) {
-		ctx.Redirect("https://"+ctx.Req.Host+ctx.Req.RequestURI, http.StatusMovedPermanently)
+	redirectMux := http.NewServeMux()
+	redirectMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "https://"+r.Host+r.RequestURI, http.StatusMovedPermanently)
 	})
 
 	s := &http.Server{
@@ -85,7 +85,7 @@ func main() {
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second, // Enough time to handle Let's Encrypt challenge on first request for any domain
 		IdleTimeout:  120 * time.Second,
-		Handler:      m,
+		Handler:      r,
 		TLSConfig: &tls.Config{
 			NextProtos: []string{"h2", "http/1.1", "acme-tls/1"},
 			MinVersion: tls.VersionTLS12, GetCertificate: manager.GetCertificate},
@@ -102,7 +102,7 @@ func main() {
 	log.Printf("HTTP server listening on %s\n", config.listenHTTP)
 	go func() {
 		// This handles ACME http-01 challenges and additionally serves all content over HTTP
-		err := http.ListenAndServe(config.listenHTTP, manager.HTTPHandler(mRedirectToHttps))
+		err := http.ListenAndServe(config.listenHTTP, manager.HTTPHandler(redirectMux))
 
 		if err != nil {
 			log.Fatalf("Failed to listen on %s: %v\n", config.listenHTTP, err)
@@ -111,4 +111,18 @@ func main() {
 
 	log.Printf("HTTPS server listening on %s\n", config.listenHTTPS)
 	log.Println(s.ListenAndServeTLS("", ""))
+}
+
+func renderTemplate(w http.ResponseWriter, name string, status int, ctx pongo2.Context) {
+	tpl, err := templateSet.FromFile(name + ".xml.j2")
+	if err != nil {
+		log.Printf("koni: Failed to load template %s: %v\n", name, err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/xml; charset=utf-8")
+	w.WriteHeader(status)
+	if err := tpl.ExecuteWriter(ctx, w); err != nil {
+		log.Printf("koni: Failed to render template %s: %v\n", name, err)
+	}
 }

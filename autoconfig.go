@@ -1,24 +1,25 @@
 package main
 
 import (
+	"net/http"
 	"regexp"
 	"strings"
 
-	macaron "gopkg.in/macaron.v1"
+	"github.com/flosch/pongo2/v6"
 )
 
 var emailRegexp = regexp.MustCompile(`^[^\s@]+@[^\s@]+$`)
 
-func autoconfigHandler(config koniConfig) macaron.Handler {
-	return func(ctx *macaron.Context) {
-		emailaddress := ctx.Req.URL.Query().Get("emailaddress")
+func autoconfigHandler(config koniConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		emailaddress := r.URL.Query().Get("emailaddress")
 		if !validateEmail(emailaddress) {
-			ctx.Error(400, "Invalid email address")
+			http.Error(w, "Invalid email address", http.StatusBadRequest)
 			return
 		}
 		user, domain := splitEmail(emailaddress)
 
-		data := map[string]interface{}{
+		data := pongo2.Context{
 			"provider":     config.provider,
 			"domain":       domain,
 			"emailaddress": emailaddress,
@@ -28,7 +29,7 @@ func autoconfigHandler(config koniConfig) macaron.Handler {
 			"pop_server":   config.popServer,
 		}
 
-		ctx.Render.HTML(200, "autoconfig", data)
+		renderTemplate(w, "autoconfig", http.StatusOK, data)
 	}
 }
 

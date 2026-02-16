@@ -1,10 +1,12 @@
 package main
 
 import (
+	"log"
+	"net/http"
 	"strings"
 
+	"github.com/flosch/pongo2/v6"
 	"github.com/gofrs/uuid"
-	macaron "gopkg.in/macaron.v1"
 )
 
 func sanitizeForHeader(s string) string {
@@ -12,18 +14,28 @@ func sanitizeForHeader(s string) string {
 	return replacer.Replace(s)
 }
 
-func mobileconfigHandler(config koniConfig) macaron.Handler {
-	return func(ctx *macaron.Context) {
-		emailaddress := ctx.Req.URL.Query().Get("emailaddress")
+func mobileconfigHandler(config koniConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		emailaddress := r.URL.Query().Get("emailaddress")
 		if !validateEmail(emailaddress) {
-			ctx.Error(400, "Invalid email address")
+			http.Error(w, "Invalid email address", http.StatusBadRequest)
 			return
 		}
 
-		payloadUUID1, _ := uuid.NewV4()
-		payloadUUID2, _ := uuid.NewV4()
+		payloadUUID1, err := uuid.NewV4()
+		if err != nil {
+			log.Printf("koni: Failed to generate UUID: %v\n", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		payloadUUID2, err := uuid.NewV4()
+		if err != nil {
+			log.Printf("koni: Failed to generate UUID: %v\n", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
 
-		data := map[string]interface{}{
+		data := pongo2.Context{
 			"emailaddress":         emailaddress,
 			"account_name":         emailaddress,
 			"smtp_server":          config.smtpServer,
@@ -34,8 +46,8 @@ func mobileconfigHandler(config koniConfig) macaron.Handler {
 			"payload_uuid2":        payloadUUID2.String(),
 		}
 
-		ctx.Resp.Header().Set("Content-Disposition", "attachment; filename=\""+sanitizeForHeader(emailaddress)+".mobileconfig\"")
-		ctx.Render.HTML(200, "mobileconfig", data)
+		w.Header().Set("Content-Disposition", "attachment; filename=\""+sanitizeForHeader(emailaddress)+".mobileconfig\"")
+		renderTemplate(w, "mobileconfig", http.StatusOK, data)
 	}
 }
 

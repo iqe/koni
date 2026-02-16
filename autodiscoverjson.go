@@ -1,10 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
-
-	macaron "gopkg.in/macaron.v1"
 )
 
 type autodiscoverjsonRedirect struct {
@@ -19,15 +19,18 @@ type autodiscoverjsonError struct {
 
 var autodiscoverV1Protocol = regexp.MustCompile(`(?i)^AutodiscoverV1$`)
 
-func autodiscoverjsonHandler() macaron.Handler {
-	return func(ctx *macaron.Context) {
-		protocol := ctx.Req.URL.Query().Get("Protocol")
+func autodiscoverjsonHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		protocol := r.URL.Query().Get("Protocol")
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		if autodiscoverV1Protocol.MatchString(protocol) {
-			url := fmt.Sprintf("https://%s/Autodiscover/Autodiscover.xml", ctx.Req.Host)
-			ctx.JSON(200, &autodiscoverjsonRedirect{Protocol: "AutodiscoverV1", Url: url})
+			url := fmt.Sprintf("https://%s/Autodiscover/Autodiscover.xml", r.Host)
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(&autodiscoverjsonRedirect{Protocol: "AutodiscoverV1", Url: url})
 		} else {
 			message := fmt.Sprintf("The given protocol value '%s' is invalid. Supported values are: AutodiscoverV1", protocol)
-			ctx.JSON(400, &autodiscoverjsonError{ErrorCode: "InvalidProtocol", ErrorMessage: message})
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(&autodiscoverjsonError{ErrorCode: "InvalidProtocol", ErrorMessage: message})
 		}
 	}
 }
