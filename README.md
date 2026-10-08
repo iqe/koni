@@ -62,6 +62,17 @@ See comments in `koni.conf`. Unknown settings are rejected at startup.
 Koni logs to stderr in `key=value` format without timestamps (systemd/journald adds those).
 Set `debug = true` to additionally log full request dumps.
 
+Each access log line has a `category`: `autoconfig`, `autodiscover`, `mobileconfig`, `acme` (Let's Encrypt
+challenges) or `noise` (everything else, mostly bots scanning for vulnerabilities). For example:
+
+```
+journalctl -u koni | grep msg=request | grep -v category=noise           # real traffic only
+journalctl -u koni | grep -o 'category=[a-z]*' | sort | uniq -c         # requests per category
+```
+
+Note that bots also probe the real endpoints, especially `autodiscover`. Requests from real clients usually
+succeed (`status=200`), bot probes typically get `status=400`.
+
 ### Templates
 
 The response templates in `templates/` (Go [text/template](https://pkg.go.dev/text/template) syntax) are built into

@@ -4,8 +4,38 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 )
+
+// Request categories for the access log. Everything that is not one of koni's
+// endpoints (mostly bots scanning for vulnerabilities) is logged as noise.
+const (
+	categoryAutoconfig   = "autoconfig"
+	categoryAutodiscover = "autodiscover"
+	categoryMobileconfig = "mobileconfig"
+	categoryACME         = "acme"
+	categoryNoise        = "noise"
+)
+
+var pathCategories = map[string]string{
+	"/mail/config-v1.1.xml":                        categoryAutoconfig,
+	"/.well-known/autoconfig/mail/config-v1.1.xml": categoryAutoconfig,
+	"/autodiscover/autodiscover.xml":               categoryAutodiscover,
+	"/Autodiscover/Autodiscover.xml":               categoryAutodiscover,
+	"/autodiscover/autodiscover.json":              categoryAutodiscover,
+	"/mobileconfig.xml":                            categoryMobileconfig,
+}
+
+func requestCategory(path string) string {
+	if category, ok := pathCategories[path]; ok {
+		return category
+	}
+	if strings.HasPrefix(path, "/.well-known/acme-challenge/") {
+		return categoryACME
+	}
+	return categoryNoise
+}
 
 type statusRecorder struct {
 	http.ResponseWriter
@@ -46,6 +76,7 @@ func accessLogHandler(next http.Handler) http.Handler {
 		elapsed := time.Since(startTime)
 
 		slog.LogAttrs(r.Context(), slog.LevelInfo, "request",
+			slog.String("category", requestCategory(r.URL.Path)),
 			slog.String("client", clientIP(r.RemoteAddr)),
 			slog.String("host", r.Host),
 			slog.String("method", r.Method),
