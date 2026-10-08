@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/xml"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 )
 
@@ -31,13 +31,13 @@ func autodiscoverxmlHandler(config koniConfig) http.HandlerFunc {
 
 		b, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Printf("koni: Failed to read autodiscover body bytes: %v\n", err)
+			slog.Warn("Failed to read autodiscover request body", "error", err)
 			http.Error(w, "Invalid request", http.StatusBadRequest)
 			return
 		}
 		var requestXML autodiscover
 		if err := xml.Unmarshal(b, &requestXML); err != nil {
-			log.Printf("koni: Failed to parse autodiscover XML: %v\n", err)
+			slog.Warn("Failed to parse autodiscover XML", "error", err)
 			http.Error(w, "Invalid XML", http.StatusBadRequest)
 			return
 		}

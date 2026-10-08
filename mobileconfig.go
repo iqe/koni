@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -23,13 +23,13 @@ func mobileconfigHandler(config koniConfig) http.HandlerFunc {
 
 		payloadUUID1, err := uuid.NewV4()
 		if err != nil {
-			log.Printf("koni: Failed to generate UUID: %v\n", err)
+			slog.Error("Failed to generate UUID", "error", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 		payloadUUID2, err := uuid.NewV4()
 		if err != nil {
-			log.Printf("koni: Failed to generate UUID: %v\n", err)
+			slog.Error("Failed to generate UUID", "error", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}

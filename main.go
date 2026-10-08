@@ -5,7 +5,9 @@ import (
 	"crypto/tls"
 	"errors"
 	"flag"
-	"log"
+	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -42,19 +44,22 @@ const (
 )
 
 func main() {
-	// Remove date + time from logging output (systemd adds those for us)
-	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
-
 	flag.Parse()
 
 	if *versionFlag {
-		log.Printf("koni - version %s\n", version)
+		fmt.Printf("koni - version %s\n", version)
 		os.Exit(0)
 	}
 
+	logLevel := new(slog.LevelVar)
+	slog.SetDefault(slog.New(newLogHandler(os.Stderr, logLevel)))
+
 	config, err := loadConfigFile(*configFileFlag)
 	if err != nil {
-		log.Fatalf("koni: %v\n", err)
+		fatal("Failed to load configuration", "error", err)
+	}
+	if config.debug {
+		logLevel.Set(slog.LevelDebug)
 	}
 
 	// Let's Encrypt autocert via tls-alpn-01 and http-01 challenges
@@ -62,29 +67,48 @@ func main() {
 
 	httpServer, httpsServer := buildServers(config, buildRouter(config), manager)
 
-	log.Printf("Starting koni %s...\n", version)
-	log.Printf("Let's Encrypt URL: %s\n", config.url)
+	slog.Info("Starting koni",
+		"version", version,
+		"letsencrypt_url", config.url,
+		"certs_dir", config.certsDir,
+		"smtp_server", config.smtpServer,
+		"imap_server", config.imapServer,
+		"pop3_server", config.popServer,
+	)
 	if config.url == stagingURL {
-		log.Printf("WARNING: Using the Let's Encrypt STAGING environment. Clients will not trust the certificates. Set letsencrypt.url for production use.\n")
+		slog.Warn("Using the Let's Encrypt STAGING environment. Clients will not trust the certificates. Set letsencrypt.url for production use.")
 	}
-	log.Printf("Certificate cache directory: %s\n", config.certsDir)
-
-	log.Printf("SMTP server: %s\n", config.smtpServer)
-	log.Printf("IMAP server: %s\n", config.imapServer)
-	log.Printf("POP3 server: %s\n", config.popServer)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	if err := serve(ctx, httpServer, httpsServer); err != nil {
-		log.Fatalf("koni: %v\n", err)
+		fatal("Server failed", "error", err)
 	}
-	log.Println("koni stopped")
+	slog.Info("koni stopped")
+}
+
+// newLogHandler creates a text log handler without timestamps (systemd adds those for us)
+func newLogHandler(w io.Writer, level slog.Leveler) slog.Handler {
+	return slog.NewTextHandler(w, &slog.HandlerOptions{
+		Level: level,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey && len(groups) == 0 {
+				return slog.Attr{}
+			}
+			return a
+		},
+	})
+}
+
+func fatal(msg string, args ...any) {
+	slog.Error(msg, args...)
+	os.Exit(1)
 }
 
 func buildRouter(config koniConfig) http.Handler {
 	r := chi.NewRouter()
-	r.Use(apacheLogHandler)
+	r.Use(accessLogHandler)
 	r.Use(middleware.Recoverer)
 
 	if config.debug {
@@ -121,11 +145,12 @@ func buildServers(config koniConfig, handler http.Handler, manager *autocert.Man
 	// This handles ACME http-01 challenges and redirects everything else to HTTPS
 	httpServer := &http.Server{
 		Addr:              config.listenHTTP,
-		Handler:           manager.HTTPHandler(redirectMux),
+		Handler:           accessLogHandler(manager.HTTPHandler(redirectMux)),
 		ReadHeaderTimeout: readHeaderTimeout,
 		ReadTimeout:       readTimeout,
 		WriteTimeout:      writeTimeout,
 		IdleTimeout:       idleTimeout,
+		ErrorLog:          slog.NewLogLogger(slog.Default().Handler(), slog.LevelWarn),
 	}
 
 	// TLSConfig sets GetCertificate and NextProtos (including acme-tls/1 for tls-alpn-01)
@@ -140,6 +165,7 @@ func buildServers(config koniConfig, handler http.Handler, manager *autocert.Man
 		ReadTimeout:       readTimeout,
 		WriteTimeout:      writeTimeout,
 		IdleTimeout:       idleTimeout,
+		ErrorLog:          slog.NewLogLogger(slog.Default().Handler(), slog.LevelWarn),
 	}
 
 	return httpServer, httpsServer
@@ -151,18 +177,18 @@ func serve(ctx context.Context, httpServer, httpsServer *http.Server) error {
 	errc := make(chan error, 2)
 
 	go func() {
-		log.Printf("HTTP server listening on %s\n", httpServer.Addr)
+		slog.Info("HTTP server listening", "addr", httpServer.Addr)
 		errc <- httpServer.ListenAndServe()
 	}()
 	go func() {
-		log.Printf("HTTPS server listening on %s\n", httpsServer.Addr)
+		slog.Info("HTTPS server listening", "addr", httpsServer.Addr)
 		errc <- httpsServer.ListenAndServeTLS("", "")
 	}()
 
 	var serveErr error
 	select {
 	case <-ctx.Done():
-		log.Println("Shutting down...")
+		slog.Info("Shutting down")
 	case serveErr = <-errc:
 	}
 

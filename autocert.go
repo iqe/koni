@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"regexp"
 
@@ -18,7 +17,7 @@ var (
 func buildAutocertManager(letsEncryptURL string, email string, certsDir string) *autocert.Manager {
 	myHostname, err := os.Hostname()
 	if err != nil {
-		log.Fatalf("koni: failed to get local hostname from OS: %s\n", err)
+		fatal("Failed to get local hostname from OS", "error", err)
 	}
 
 	hostPolicy := func(ctx context.Context, host string) error {

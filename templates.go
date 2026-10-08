@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"encoding/xml"
-	"log"
+	"log/slog"
 	"net/http"
 	"text/template"
 )
@@ -29,7 +29,7 @@ func renderTemplate(w http.ResponseWriter, name string, contentType string, stat
 	// Render into a buffer first so that errors can still produce a 500 response
 	var buf bytes.Buffer
 	if err := templates.ExecuteTemplate(&buf, name+".xml.tmpl", escaped); err != nil {
-		log.Printf("koni: Failed to render template %s: %v\n", name, err)
+		slog.Error("Failed to render template", "template", name, "error", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
