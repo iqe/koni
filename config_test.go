@@ -22,18 +22,9 @@ func TestStringDefault(t *testing.T) {
 	})
 }
 
-func TestBoolToString(t *testing.T) {
-	if got := boolToString(true); got != "yes" {
-		t.Errorf("boolToString(true) = %q, want %q", got, "yes")
-	}
-	if got := boolToString(false); got != "no" {
-		t.Errorf("boolToString(false) = %q, want %q", got, "no")
-	}
-}
-
 func TestLoadConfigFile(t *testing.T) {
 	content := `
-debug = "yes"
+debug = true
 listen_http = "0.0.0.0:80"
 listen_https = "0.0.0.0:443"
 

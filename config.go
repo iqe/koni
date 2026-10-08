@@ -24,11 +24,11 @@ type koniConfig struct {
 }
 
 type tomlConfig struct {
-	Debug       string           `toml:"debug"`
-	ListenHTTP  string           `toml:"listen_http"`
-	ListenHTTPS string           `toml:"listen_https"`
-	LetsEncrypt tomlLetsEncrypt  `toml:"letsencrypt"`
-	Mail        tomlMail         `toml:"mail"`
+	Debug       bool            `toml:"debug"`
+	ListenHTTP  string          `toml:"listen_http"`
+	ListenHTTPS string          `toml:"listen_https"`
+	LetsEncrypt tomlLetsEncrypt `toml:"letsencrypt"`
+	Mail        tomlMail        `toml:"mail"`
 }
 
 type tomlLetsEncrypt struct {
@@ -63,7 +63,7 @@ func loadConfigFile(configFile string) koniConfig {
 	}
 
 	return koniConfig{
-		debug:       stringDefault(cfg.Debug, boolToString(defaultDebug)) == "yes",
+		debug:       cfg.Debug,
 		listenHTTP:  stringDefault(cfg.ListenHTTP, defaultListenHTTP),
 		listenHTTPS: stringDefault(cfg.ListenHTTPS, defaultListenHTTPS),
 		url:         stringDefault(cfg.LetsEncrypt.URL, defaultURL),
@@ -81,11 +81,4 @@ func stringDefault(val, defaultVal string) string {
 		return defaultVal
 	}
 	return val
-}
-
-func boolToString(b bool) string {
-	if b {
-		return "yes"
-	}
-	return "no"
 }

@@ -25,7 +25,6 @@ const (
 	contentTypeXML          = "text/xml; charset=utf-8"
 	contentTypeMobileconfig = "application/x-apple-aspen-config"
 
-	defaultDebug       = false
 	defaultListenHTTP  = "127.0.0.1:4080"
 	defaultListenHTTPS = "127.0.0.1:4443"
 	defaultURL         = "https://acme-staging-v02.api.letsencrypt.org/directory"
