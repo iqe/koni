@@ -57,6 +57,6 @@ func autodiscoverxmlHandler(config koniConfig) http.HandlerFunc {
 			"pop_server":   config.popServer,
 		}
 
-		renderTemplate(w, "autodiscover", http.StatusOK, data)
+		renderTemplate(w, "autodiscover", contentTypeXML, http.StatusOK, data)
 	}
 }

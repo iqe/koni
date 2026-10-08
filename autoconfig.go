@@ -29,7 +29,7 @@ func autoconfigHandler(config koniConfig) http.HandlerFunc {
 			"pop_server":   config.popServer,
 		}
 
-		renderTemplate(w, "autoconfig", http.StatusOK, data)
+		renderTemplate(w, "autoconfig", contentTypeXML, http.StatusOK, data)
 	}
 }
 

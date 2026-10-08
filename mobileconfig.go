@@ -47,7 +47,7 @@ func mobileconfigHandler(config koniConfig) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Disposition", "attachment; filename=\""+sanitizeForHeader(emailaddress)+".mobileconfig\"")
-		renderTemplate(w, "mobileconfig", http.StatusOK, data)
+		renderTemplate(w, "mobileconfig", contentTypeMobileconfig, http.StatusOK, data)
 	}
 }
 

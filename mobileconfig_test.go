@@ -69,6 +69,9 @@ func TestMobileconfigHandler(t *testing.T) {
 		if rr.Code != http.StatusOK {
 			t.Errorf("status = %d, want %d", rr.Code, http.StatusOK)
 		}
+		if ct := rr.Header().Get("Content-Type"); ct != contentTypeMobileconfig {
+			t.Errorf("Content-Type = %q, want %q", ct, contentTypeMobileconfig)
+		}
 		cd := rr.Header().Get("Content-Disposition")
 		if cd == "" {
 			t.Error("missing Content-Disposition header")

@@ -22,6 +22,9 @@ var (
 )
 
 const (
+	contentTypeXML          = "text/xml; charset=utf-8"
+	contentTypeMobileconfig = "application/x-apple-aspen-config"
+
 	defaultDebug       = false
 	defaultListenHTTP  = "127.0.0.1:4080"
 	defaultListenHTTPS = "127.0.0.1:4443"
@@ -113,14 +116,14 @@ func main() {
 	log.Println(s.ListenAndServeTLS("", ""))
 }
 
-func renderTemplate(w http.ResponseWriter, name string, status int, ctx pongo2.Context) {
+func renderTemplate(w http.ResponseWriter, name string, contentType string, status int, ctx pongo2.Context) {
 	tpl, err := templateSet.FromFile(name + ".xml.j2")
 	if err != nil {
 		log.Printf("koni: Failed to load template %s: %v\n", name, err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "text/xml; charset=utf-8")
+	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(status)
 	if err := tpl.ExecuteWriter(ctx, w); err != nil {
 		log.Printf("koni: Failed to render template %s: %v\n", name, err)
