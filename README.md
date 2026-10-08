@@ -1,6 +1,6 @@
 # Koni
 
-Koni handles [Mozilla Autoconfig](https://developer.mozilla.org/en-US/docs/Mozilla/Thunderbird/Autoconfiguration) and [Microsoft Autodiscover](https://docs.microsoft.com/en-us/exchange/client-developer/exchange-web-services/autodiscover-for-exchange) for all your domains, in one place. With automatic Let's Encrypt certificates for extra convenience.
+Koni handles [Mozilla Autoconfig](https://wiki.mozilla.org/Thunderbird:Autoconfiguration), [Microsoft Autodiscover](https://learn.microsoft.com/en-us/exchange/client-developer/exchange-web-services/autodiscover-for-exchange) and Apple mobileconfig profiles for all your domains, in one place. With automatic Let's Encrypt certificates for extra convenience.
 
 ## Installation
 
@@ -9,12 +9,12 @@ These are the basic steps needed to install koni:
 1. Download a release from the GitHub release page
 2. Extract koni-$version.tar.gz to your server
 3. Edit koni.conf to match your environment
-4. Optional: Customize and install koni.service systemd unit
-5. Make koni reachable on port 443
+4. Optional: Customize and install the koni.service systemd unit
+5. Make koni reachable on ports 80 and 443
 
    On Linux there are various methods to do this. See e.g. https://superuser.com/questions/710253/allow-non-root-process-to-bind-to-port-80-and-443
 
-   You could also setup a tcp proxy like[haproxy](https://www.haproxy.org/)
+   Alternatively, set up a TCP proxy like [haproxy](https://www.haproxy.org/) in front of koni.
 
 6. Run koni (through systemd or directly)
 
@@ -44,15 +44,44 @@ If a user configures their email client, the following happens:
 5. Koni sends HTTP response to client, with valid TLS cert.
 6. Mail client proceeds with auto config of the user's email account
 
+## Endpoints
+
+| Path | Purpose |
+|---|---|
+| `/mail/config-v1.1.xml`, `/.well-known/autoconfig/mail/config-v1.1.xml` | Mozilla Autoconfig (`?emailaddress=`) |
+| `/autodiscover/autodiscover.xml`, `/Autodiscover/Autodiscover.xml` | Microsoft Autodiscover (POX, POST) |
+| `/autodiscover/autodiscover.json` | Microsoft Autodiscover JSON, redirects to the XML endpoint |
+| `/mobileconfig.xml` | Apple configuration profile (`?emailaddress=`) |
+
+Plain HTTP requests are redirected to HTTPS, except for ACME http-01 challenges.
+
 ## Configuration
 
-See comments in `koni.conf`.
+See comments in `koni.conf`. Unknown settings are rejected at startup.
+
+Koni logs to stderr in `key=value` format without timestamps (systemd/journald adds those).
+Set `debug = true` to additionally log full request dumps.
+
+### Templates
+
+The response templates in `templates/` (Go [text/template](https://pkg.go.dev/text/template) syntax) are built into
+the binary. To change them, edit the files and rebuild koni. All values are XML-escaped before rendering.
+
+## Upgrading from 0.5.x
+
+* Templates are now built into the binary; the `templates/` directory is no longer needed at runtime.
+* The access log is now structured (`level=INFO msg=request client=... status=...`) instead of Apache format.
+* `debug` is now a TOML boolean (`debug = true`); the old `"yes"`/`"no"` values are rejected.
+* `letsencrypt.email` is optional.
 
 ## Contributing / Building
 
+Requires Go 1.26 or newer (`go.mod` selects the toolchain automatically).
+
 1. Clone the repo
-4. Hack on the code
-5. Run `git tag -a v<NEW VERSION>`
-6. Run `make release` to build a release package
-7. Run `git push --tags` to push changes to GitHub
-8. Upload the release to GitHub
+2. Hack on the code
+3. Run `make check` (vet, gofmt, staticcheck, tests, govulncheck)
+4. Run `git tag -a v<NEW VERSION>`
+5. Run `make release` to build a release package
+6. Run `git push --tags` to push changes to GitHub
+7. Upload the release to GitHub
