@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/flosch/pongo2/v6"
 	"github.com/gofrs/uuid/v5"
 )
 
@@ -35,7 +34,7 @@ func mobileconfigHandler(config koniConfig) http.HandlerFunc {
 			return
 		}
 
-		data := pongo2.Context{
+		data := templateData{
 			"emailaddress":         emailaddress,
 			"account_name":         emailaddress,
 			"smtp_server":          config.smtpServer,

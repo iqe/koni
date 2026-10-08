@@ -5,7 +5,6 @@ go 1.26.0
 toolchain go1.27.1
 
 require (
-	github.com/flosch/pongo2/v6 v6.1.0
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/gofrs/uuid/v5 v5.5.1
 	github.com/pelletier/go-toml/v2 v2.4.3

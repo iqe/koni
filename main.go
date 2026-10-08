@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/flosch/pongo2/v6"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/crypto/acme/autocert"
@@ -22,8 +21,6 @@ var (
 	versionFlag    = flag.Bool("V", false, "Print version and exit")
 	configFileFlag = flag.String("c", "koni.conf", "Path to configuration file")
 	version        = "undefined" // updated during release build
-
-	templateSet *pongo2.TemplateSet
 )
 
 const (
@@ -59,8 +56,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("koni: %v\n", err)
 	}
-
-	templateSet = pongo2.NewSet("templates", pongo2.MustNewLocalFileSystemLoader("templates"))
 
 	// Let's Encrypt autocert via tls-alpn-01 and http-01 challenges
 	manager := buildAutocertManager(config.url, config.email, config.certsDir)
@@ -176,18 +171,4 @@ func serve(ctx context.Context, httpServer, httpsServer *http.Server) error {
 
 	shutdownErr := errors.Join(httpServer.Shutdown(shutdownCtx), httpsServer.Shutdown(shutdownCtx))
 	return errors.Join(serveErr, shutdownErr)
-}
-
-func renderTemplate(w http.ResponseWriter, name string, contentType string, status int, ctx pongo2.Context) {
-	tpl, err := templateSet.FromFile(name + ".xml.j2")
-	if err != nil {
-		log.Printf("koni: Failed to load template %s: %v\n", name, err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", contentType)
-	w.WriteHeader(status)
-	if err := tpl.ExecuteWriter(ctx, w); err != nil {
-		log.Printf("koni: Failed to render template %s: %v\n", name, err)
-	}
 }

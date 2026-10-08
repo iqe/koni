@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-
-	"github.com/flosch/pongo2/v6"
 )
 
 var emailRegexp = regexp.MustCompile(`^[^\s@]+@[^\s@]+$`)
@@ -19,7 +17,7 @@ func autoconfigHandler(config koniConfig) http.HandlerFunc {
 		}
 		user, domain := splitEmail(emailaddress)
 
-		data := pongo2.Context{
+		data := templateData{
 			"provider":     config.provider,
 			"domain":       domain,
 			"emailaddress": emailaddress,

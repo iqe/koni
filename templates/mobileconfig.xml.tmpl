@@ -6,47 +6,47 @@
 	<array>
 		<dict>
 			<key>EmailAccountDescription</key>
-			<string>{{ emailaddress }}</string>
+			<string>{{ .emailaddress }}</string>
 			<key>EmailAccountName</key>
-			<string>{{ account_name }}</string>
+			<string>{{ .account_name }}</string>
 			<key>EmailAccountType</key>
 			<string>EmailTypeIMAP</string>
 			<key>EmailAddress</key>
-			<string>{{ emailaddress }}</string>
+			<string>{{ .emailaddress }}</string>
 			<key>IncomingMailServerAuthentication</key>
 			<string>EmailAuthPassword</string>
 			<key>IncomingMailServerHostName</key>
-			<string>{{ imap_server }}</string>
+			<string>{{ .imap_server }}</string>
 			<key>IncomingMailServerPortNumber</key>
 			<integer>993</integer>
 			<key>IncomingMailServerUseSSL</key>
 			<true/>
 			<key>IncomingMailServerUsername</key>
-			<string>{{ emailaddress }}</string>
+			<string>{{ .emailaddress }}</string>
 			<key>OutgoingMailServerAuthentication</key>
 			<string>EmailAuthPassword</string>
 			<key>OutgoingMailServerHostName</key>
-			<string>{{ smtp_server }}</string>
+			<string>{{ .smtp_server }}</string>
 			<key>OutgoingMailServerPortNumber</key>
 			<integer>465</integer>
 			<key>OutgoingMailServerUseSSL</key>
 			<true/>
 			<key>OutgoingMailServerUsername</key>
-			<string>{{ emailaddress }}</string>
+			<string>{{ .emailaddress }}</string>
 			<key>OutgoingPasswordSameAsIncomingPassword</key>
 			<true/>
 			<key>PayloadDescription</key>
 			<string>Configure email account.</string>
 			<key>PayloadDisplayName</key>
-			<string>IMAP Account ({{ emailaddress }})</string>
+			<string>IMAP Account ({{ .emailaddress }})</string>
 			<key>PayloadIdentifier</key>
-			<string>{{ payload_identifier }}</string>
+			<string>{{ .payload_identifier }}</string>
 			<key>PayloadOrganization</key>
-			<string>{{ payload_organization }}</string>
+			<string>{{ .payload_organization }}</string>
 			<key>PayloadType</key>
 			<string>com.apple.mail.managed</string>
 			<key>PayloadUUID</key>
-			<string>{{ payload_uuid1 }}</string>
+			<string>{{ .payload_uuid1 }}</string>
 			<key>PayloadVersion</key>
 			<integer>1</integer>
 			<key>PreventAppSheet</key>
@@ -60,17 +60,17 @@
 	<key>PayloadDescription</key>
 	<string>Email Account</string>
 	<key>PayloadDisplayName</key>
-	<string>{{ emailaddress }}</string>
+	<string>{{ .emailaddress }}</string>
 	<key>PayloadIdentifier</key>
-	<string>{{ payload_identifier }}</string>
+	<string>{{ .payload_identifier }}</string>
 	<key>PayloadOrganization</key>
-	<string>{{ payload_organization }}</string>
+	<string>{{ .payload_organization }}</string>
 	<key>PayloadRemovalDisallowed</key>
 	<false/>
 	<key>PayloadType</key>
 	<string>Configuration</string>
 	<key>PayloadUUID</key>
-	<string>{{ payload_uuid2 }}</string>
+	<string>{{ .payload_uuid2 }}</string>
 	<key>PayloadVersion</key>
 	<integer>1</integer>
 </dict>

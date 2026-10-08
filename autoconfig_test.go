@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/flosch/pongo2/v6"
 )
 
 func TestValidateEmail(t *testing.T) {
@@ -57,8 +55,6 @@ func TestSplitEmail(t *testing.T) {
 }
 
 func TestAutoconfigHandler(t *testing.T) {
-	templateSet = pongo2.NewSet("templates", pongo2.MustNewLocalFileSystemLoader("templates"))
-
 	config := koniConfig{
 		provider:   "testprovider",
 		smtpServer: "smtp.example.com",

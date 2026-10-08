@@ -5,8 +5,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-
-	"github.com/flosch/pongo2/v6"
 )
 
 // Autodiscover request:
@@ -50,7 +48,7 @@ func autodiscoverxmlHandler(config koniConfig) http.HandlerFunc {
 			return
 		}
 
-		data := pongo2.Context{
+		data := templateData{
 			"emailaddress": emailaddress,
 			"smtp_server":  config.smtpServer,
 			"imap_server":  config.imapServer,

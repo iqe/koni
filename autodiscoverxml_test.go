@@ -5,13 +5,9 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/flosch/pongo2/v6"
 )
 
 func TestAutodiscoverxmlHandler(t *testing.T) {
-	templateSet = pongo2.NewSet("templates", pongo2.MustNewLocalFileSystemLoader("templates"))
-
 	config := koniConfig{
 		smtpServer: "smtp.example.com",
 		imapServer: "imap.example.com",
