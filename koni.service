@@ -10,14 +10,14 @@
 [Unit]
 Description=Koni
 After=network.target
+StartLimitIntervalSec=0
 
 [Service]
 User=koni
 WorkingDirectory=/opt/koni
-ExecStart=/opt/koni/koni -c /opt/koni.conf
+ExecStart=/opt/koni/koni -c /opt/koni/koni.conf
 Restart=always
 RestartSec=5
-StartLimitIntervalSec=0
 
 [Install]
 WantedBy=multi-user.target
