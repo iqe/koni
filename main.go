@@ -63,6 +63,9 @@ func main() {
 	}
 
 	// Let's Encrypt autocert via tls-alpn-01 and http-01 challenges
+	if err := checkCertsDir(config.certsDir); err != nil {
+		fatal("Certificate cache directory is not writable", "dir", config.certsDir, "error", err)
+	}
 	manager := buildAutocertManager(config.url, config.email, config.certsDir)
 
 	httpServer, httpsServer := buildServers(config, buildRouter(config), manager)

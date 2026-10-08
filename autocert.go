@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -13,6 +14,20 @@ import (
 var (
 	hostRegex = regexp.MustCompile(`(?i)^(autoconfig|autodiscover)\..+$`) // case insensitive
 )
+
+// checkCertsDir verifies that the certificate cache directory exists (creating it
+// if needed) and is writable. autocert fails every certificate request if it cannot
+// store its account key, which would otherwise only show up on the first TLS handshake.
+func checkCertsDir(dir string) error {
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return err
+	}
+	f, err := os.CreateTemp(dir, ".koni-write-test-*")
+	if err != nil {
+		return err
+	}
+	return errors.Join(f.Close(), os.Remove(f.Name()))
+}
 
 func buildAutocertManager(letsEncryptURL string, email string, certsDir string) *autocert.Manager {
 	myHostname, err := os.Hostname()
