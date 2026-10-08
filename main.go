@@ -1,16 +1,21 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
+	"errors"
 	"flag"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/flosch/pongo2/v6"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 var (
@@ -31,6 +36,12 @@ const (
 	defaultCertsDir    = "."
 
 	stagingURL = "https://acme-staging-v02.api.letsencrypt.org/directory"
+
+	readHeaderTimeout = 10 * time.Second
+	readTimeout       = 30 * time.Second
+	writeTimeout      = 30 * time.Second // Enough time to handle Let's Encrypt challenge on first request for any domain
+	idleTimeout       = 120 * time.Second
+	shutdownTimeout   = 10 * time.Second
 )
 
 func main() {
@@ -51,6 +62,32 @@ func main() {
 
 	templateSet = pongo2.NewSet("templates", pongo2.MustNewLocalFileSystemLoader("templates"))
 
+	// Let's Encrypt autocert via tls-alpn-01 and http-01 challenges
+	manager := buildAutocertManager(config.url, config.email, config.certsDir)
+
+	httpServer, httpsServer := buildServers(config, buildRouter(config), manager)
+
+	log.Printf("Starting koni %s...\n", version)
+	log.Printf("Let's Encrypt URL: %s\n", config.url)
+	if config.url == stagingURL {
+		log.Printf("WARNING: Using the Let's Encrypt STAGING environment. Clients will not trust the certificates. Set letsencrypt.url for production use.\n")
+	}
+	log.Printf("Certificate cache directory: %s\n", config.certsDir)
+
+	log.Printf("SMTP server: %s\n", config.smtpServer)
+	log.Printf("IMAP server: %s\n", config.imapServer)
+	log.Printf("POP3 server: %s\n", config.popServer)
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	if err := serve(ctx, httpServer, httpsServer); err != nil {
+		log.Fatalf("koni: %v\n", err)
+	}
+	log.Println("koni stopped")
+}
+
+func buildRouter(config koniConfig) http.Handler {
 	r := chi.NewRouter()
 	r.Use(apacheLogHandler)
 	r.Use(middleware.Recoverer)
@@ -76,51 +113,69 @@ func main() {
 	// Apple iOS mobileconfig
 	r.Get("/mobileconfig.xml", mobileconfigHandler(config))
 
-	// Let's Encrypt autocert via tls-alpn-01 challenge
-	// See https://tools.ietf.org/html/draft-ietf-acme-tls-alpn-01
+	return r
+}
 
-	manager := buildAutocertManager(config.url, config.email, config.certsDir)
-
+func buildServers(config koniConfig, handler http.Handler, manager *autocert.Manager) (*http.Server, *http.Server) {
 	// Handler to redirect HTTP to HTTPS
 	redirectMux := http.NewServeMux()
 	redirectMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "https://"+r.Host+r.RequestURI, http.StatusMovedPermanently)
 	})
 
-	s := &http.Server{
-		Addr:         config.listenHTTPS,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second, // Enough time to handle Let's Encrypt challenge on first request for any domain
-		IdleTimeout:  120 * time.Second,
-		Handler:      r,
-		TLSConfig: &tls.Config{
-			NextProtos: []string{"h2", "http/1.1", "acme-tls/1"},
-			MinVersion: tls.VersionTLS12, GetCertificate: manager.GetCertificate},
+	// This handles ACME http-01 challenges and redirects everything else to HTTPS
+	httpServer := &http.Server{
+		Addr:              config.listenHTTP,
+		Handler:           manager.HTTPHandler(redirectMux),
+		ReadHeaderTimeout: readHeaderTimeout,
+		ReadTimeout:       readTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
 	}
 
-	log.Printf("Starting koni %s...\n", version)
-	log.Printf("Let's Encrypt URL: %s\n", config.url)
-	if config.url == stagingURL {
-		log.Printf("WARNING: Using the Let's Encrypt STAGING environment. Clients will not trust the certificates. Set letsencrypt.url for production use.\n")
+	// TLSConfig sets GetCertificate and NextProtos (including acme-tls/1 for tls-alpn-01)
+	tlsConfig := manager.TLSConfig()
+	tlsConfig.MinVersion = tls.VersionTLS12
+
+	httpsServer := &http.Server{
+		Addr:              config.listenHTTPS,
+		Handler:           handler,
+		TLSConfig:         tlsConfig,
+		ReadHeaderTimeout: readHeaderTimeout,
+		ReadTimeout:       readTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
 	}
-	log.Printf("Certificate cache directory: %s\n", config.certsDir)
 
-	log.Printf("SMTP server: %s\n", config.smtpServer)
-	log.Printf("IMAP server: %s\n", config.imapServer)
-	log.Printf("POP3 server: %s\n", config.popServer)
+	return httpServer, httpsServer
+}
 
-	log.Printf("HTTP server listening on %s\n", config.listenHTTP)
+// serve runs both servers until ctx is cancelled or one of them fails,
+// then shuts down both gracefully.
+func serve(ctx context.Context, httpServer, httpsServer *http.Server) error {
+	errc := make(chan error, 2)
+
 	go func() {
-		// This handles ACME http-01 challenges and additionally serves all content over HTTP
-		err := http.ListenAndServe(config.listenHTTP, manager.HTTPHandler(redirectMux))
-
-		if err != nil {
-			log.Fatalf("Failed to listen on %s: %v\n", config.listenHTTP, err)
-		}
+		log.Printf("HTTP server listening on %s\n", httpServer.Addr)
+		errc <- httpServer.ListenAndServe()
+	}()
+	go func() {
+		log.Printf("HTTPS server listening on %s\n", httpsServer.Addr)
+		errc <- httpsServer.ListenAndServeTLS("", "")
 	}()
 
-	log.Printf("HTTPS server listening on %s\n", config.listenHTTPS)
-	log.Println(s.ListenAndServeTLS("", ""))
+	var serveErr error
+	select {
+	case <-ctx.Done():
+		log.Println("Shutting down...")
+	case serveErr = <-errc:
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+
+	shutdownErr := errors.Join(httpServer.Shutdown(shutdownCtx), httpsServer.Shutdown(shutdownCtx))
+	return errors.Join(serveErr, shutdownErr)
 }
 
 func renderTemplate(w http.ResponseWriter, name string, contentType string, status int, ctx pongo2.Context) {
