@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	hostRegex = regexp.MustCompile("(?i)^(autoconfig|autodiscover)\\..+$") // case insensitive
+	hostRegex = regexp.MustCompile(`(?i)^(autoconfig|autodiscover)\..+$`) // case insensitive
 )
 
 func buildAutocertManager(letsEncryptURL string, email string, certsDir string) *autocert.Manager {
