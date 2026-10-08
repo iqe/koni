@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -44,7 +45,10 @@ pop3_server = "pop.example.com"
 		t.Fatalf("failed to write config: %v", err)
 	}
 
-	cfg := loadConfigFile(path)
+	cfg, err := loadConfigFile(path)
+	if err != nil {
+		t.Fatalf("loadConfigFile: %v", err)
+	}
 
 	if !cfg.debug {
 		t.Error("debug: got false, want true")
@@ -80,9 +84,6 @@ pop3_server = "pop.example.com"
 
 func TestLoadConfigFileDefaults(t *testing.T) {
 	content := `
-[letsencrypt]
-email = "admin@example.com"
-
 [mail]
 provider_id = "example.com"
 smtp_server = "smtp.example.com"
@@ -94,7 +95,10 @@ pop3_server = "pop.example.com"
 		t.Fatalf("failed to write config: %v", err)
 	}
 
-	cfg := loadConfigFile(path)
+	cfg, err := loadConfigFile(path)
+	if err != nil {
+		t.Fatalf("loadConfigFile: %v", err)
+	}
 
 	if cfg.debug {
 		t.Error("debug: got true, want false (default)")
@@ -111,4 +115,49 @@ pop3_server = "pop.example.com"
 	if cfg.certsDir != defaultCertsDir {
 		t.Errorf("certsDir = %q, want default %q", cfg.certsDir, defaultCertsDir)
 	}
+	if cfg.email != "" {
+		t.Errorf("email = %q, want empty (optional)", cfg.email)
+	}
+}
+
+func TestLoadConfigFileErrors(t *testing.T) {
+	const mail = `
+[mail]
+provider_id = "example.com"
+smtp_server = "smtp.example.com"
+imap_server = "imap.example.com"
+pop3_server = "pop.example.com"
+`
+	tests := []struct {
+		name    string
+		content string
+		wantErr string
+	}{
+		{"unknown top-level key", "listen_htps = \":443\"\n" + mail, "listen_htps"},
+		{"unknown section key", mail + "smtp_port = 587\n", "smtp_port"},
+		{"missing mandatory", "[mail]\nprovider_id = \"example.com\"\n", "mail."},
+		{"malformed", "this is not toml", "malformed"},
+		{"debug as string", "debug = \"yes\"\n" + mail, "malformed"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "test.conf")
+			if err := os.WriteFile(path, []byte(tt.content), 0644); err != nil {
+				t.Fatalf("failed to write config: %v", err)
+			}
+			_, err := loadConfigFile(path)
+			if err == nil {
+				t.Fatal("loadConfigFile returned nil error")
+			}
+			if !strings.Contains(err.Error(), tt.wantErr) {
+				t.Errorf("error %q does not mention %q", err, tt.wantErr)
+			}
+		})
+	}
+
+	t.Run("missing file", func(t *testing.T) {
+		if _, err := loadConfigFile(filepath.Join(t.TempDir(), "nope.conf")); err == nil {
+			t.Fatal("loadConfigFile returned nil error")
+		}
+	})
 }

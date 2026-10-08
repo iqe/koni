@@ -27,8 +27,10 @@ const (
 
 	defaultListenHTTP  = "127.0.0.1:4080"
 	defaultListenHTTPS = "127.0.0.1:4443"
-	defaultURL         = "https://acme-staging-v02.api.letsencrypt.org/directory"
+	defaultURL         = stagingURL
 	defaultCertsDir    = "."
+
+	stagingURL = "https://acme-staging-v02.api.letsencrypt.org/directory"
 )
 
 func main() {
@@ -42,7 +44,10 @@ func main() {
 		os.Exit(0)
 	}
 
-	config := loadConfigFile(*configFileFlag)
+	config, err := loadConfigFile(*configFileFlag)
+	if err != nil {
+		log.Fatalf("koni: %v\n", err)
+	}
 
 	templateSet = pongo2.NewSet("templates", pongo2.MustNewLocalFileSystemLoader("templates"))
 
@@ -95,6 +100,9 @@ func main() {
 
 	log.Printf("Starting koni %s...\n", version)
 	log.Printf("Let's Encrypt URL: %s\n", config.url)
+	if config.url == stagingURL {
+		log.Printf("WARNING: Using the Let's Encrypt STAGING environment. Clients will not trust the certificates. Set letsencrypt.url for production use.\n")
+	}
 	log.Printf("Certificate cache directory: %s\n", config.certsDir)
 
 	log.Printf("SMTP server: %s\n", config.smtpServer)

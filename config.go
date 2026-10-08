@@ -1,7 +1,9 @@
 package main
 
 import (
-	"log"
+	"bytes"
+	"errors"
+	"fmt"
 	"os"
 
 	toml "github.com/pelletier/go-toml/v2"
@@ -44,22 +46,31 @@ type tomlMail struct {
 	SMTPServer string `toml:"smtp_server"`
 }
 
-func loadConfigFile(configFile string) koniConfig {
+func loadConfigFile(configFile string) (koniConfig, error) {
 	data, err := os.ReadFile(configFile)
 	if err != nil {
-		log.Fatalf("Failed to open config file: %s", err)
+		return koniConfig{}, fmt.Errorf("failed to open config file: %w", err)
 	}
 
 	var cfg tomlConfig
-	if err := toml.Unmarshal(data, &cfg); err != nil {
-		log.Fatalf("Config file %s is malformed: %s", configFile, err)
+	decoder := toml.NewDecoder(bytes.NewReader(data)).DisallowUnknownFields()
+	if err := decoder.Decode(&cfg); err != nil {
+		var strictErr *toml.StrictMissingError
+		if errors.As(err, &strictErr) {
+			return koniConfig{}, fmt.Errorf("config file %s contains unknown settings:\n%s", configFile, strictErr.String())
+		}
+		return koniConfig{}, fmt.Errorf("config file %s is malformed: %w", configFile, err)
 	}
 
-	requireNonEmpty := func(val, key string) string {
-		if val == "" {
-			log.Fatalf("Invalid configuration file: Mandatory setting '%s' is missing", key)
+	for _, setting := range []struct{ key, val string }{
+		{"mail.provider_id", cfg.Mail.ProviderID},
+		{"mail.imap_server", cfg.Mail.IMAPServer},
+		{"mail.pop3_server", cfg.Mail.POP3Server},
+		{"mail.smtp_server", cfg.Mail.SMTPServer},
+	} {
+		if setting.val == "" {
+			return koniConfig{}, fmt.Errorf("invalid configuration file: mandatory setting '%s' is missing", setting.key)
 		}
-		return val
 	}
 
 	return koniConfig{
@@ -68,12 +79,12 @@ func loadConfigFile(configFile string) koniConfig {
 		listenHTTPS: stringDefault(cfg.ListenHTTPS, defaultListenHTTPS),
 		url:         stringDefault(cfg.LetsEncrypt.URL, defaultURL),
 		certsDir:    stringDefault(cfg.LetsEncrypt.CertsDir, defaultCertsDir),
-		email:       requireNonEmpty(cfg.LetsEncrypt.Email, "letsencrypt.email"),
-		provider:    requireNonEmpty(cfg.Mail.ProviderID, "mail.provider_id"),
-		imapServer:  requireNonEmpty(cfg.Mail.IMAPServer, "mail.imap_server"),
-		popServer:   requireNonEmpty(cfg.Mail.POP3Server, "mail.pop3_server"),
-		smtpServer:  requireNonEmpty(cfg.Mail.SMTPServer, "mail.smtp_server"),
-	}
+		email:       cfg.LetsEncrypt.Email,
+		provider:    cfg.Mail.ProviderID,
+		imapServer:  cfg.Mail.IMAPServer,
+		popServer:   cfg.Mail.POP3Server,
+		smtpServer:  cfg.Mail.SMTPServer,
+	}, nil
 }
 
 func stringDefault(val, defaultVal string) string {
